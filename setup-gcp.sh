@@ -79,7 +79,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
 gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" \
-    --role="roles/artifactregistry.writer" \
+    --role="roles/artifactregistry.admin" \
     --condition=None \
     --quiet >/dev/null 2>&1
 
