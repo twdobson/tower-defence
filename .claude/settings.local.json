@@ -29,7 +29,9 @@
       "Bash(Pulumi.dev.yaml)",
       "Bash(./teardown-gcp.sh)",
       "Bash(pulumi up:*)",
-      "Bash(./setup-github-secrets.sh)"
+      "Bash(./setup-github-secrets.sh)",
+      "Bash(lsof:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []

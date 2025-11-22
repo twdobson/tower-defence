@@ -118,6 +118,207 @@ class Tower {
         this.totalDamageDealt = 0;
         this.shotsFired = 0;
         this.sellValue = Math.floor(this.cost * 0.7);
+        this.upgradePath = null;  // Will be set when tower reaches level 3
+    }
+
+    getUpgradePaths() {
+        // Define upgrade paths for each tower type
+        const paths = {
+            basic: [
+                { id: 'fortress', name: 'Fortress', description: '+50% damage, +30% range, splash damage' },
+                { id: 'rapid', name: 'Gatling', description: '3x fire rate, projectiles pierce' },
+                { id: 'support', name: 'Command', description: 'Boosts nearby towers +25% damage' }
+            ],
+            sniper: [
+                { id: 'marksman', name: 'Marksman', description: '+100% range, pierce 3 enemies' },
+                { id: 'assassin', name: 'Assassin', description: '30% crit (5x damage), reveal flying' },
+                { id: 'explosive', name: 'Explosive', description: 'Shots explode on impact' }
+            ],
+            rapid: [
+                { id: 'minigun', name: 'Minigun', description: '2x fire rate, +50% damage' },
+                { id: 'shredder', name: 'Shredder', description: 'Armor shred (-50% enemy resistance)' },
+                { id: 'suppressor', name: 'Suppressor', description: 'Slows enemies 40%' }
+            ],
+            splash: [
+                { id: 'nuke', name: 'Nuclear', description: '2x splash radius, +100% damage' },
+                { id: 'cluster', name: 'Cluster', description: 'Shoots 3 projectiles' },
+                { id: 'napalm', name: 'Napalm', description: 'Burning ground DoT' }
+            ],
+            poison: [
+                { id: 'plague', name: 'Plague', description: 'Poison spreads to nearby enemies' },
+                { id: 'venom', name: 'Venom', description: '3x poison damage, instant damage' },
+                { id: 'corrosive', name: 'Corrosive', description: 'Melts shields and armor' }
+            ],
+            freeze: [
+                { id: 'blizzard', name: 'Blizzard', description: 'AoE freeze, permanent slow' },
+                { id: 'permafrost', name: 'Permafrost', description: '2x freeze duration, shatters frozen' },
+                { id: 'icewall', name: 'Ice Wall', description: 'Blocks enemy movement temporarily' }
+            ],
+            electric: [
+                { id: 'tesla', name: 'Tesla', description: '+3 chain targets, +100% chain damage' },
+                { id: 'overload', name: 'Overload', description: 'Stun enemies, EMP shields' },
+                { id: 'conductor', name: 'Conductor', description: 'Chains back to original target' }
+            ],
+            laser: [
+                { id: 'beam', name: 'Beam', description: 'Constant beam, hits all in line' },
+                { id: 'focused', name: 'Focused', description: '+200% damage, melts armor' },
+                { id: 'prismatic', name: 'Prismatic', description: 'Splits into 5 beams' }
+            ],
+            antiair: [
+                { id: 'flak', name: 'Flak Cannon', description: 'Splash damage, grounds flying' },
+                { id: 'homing', name: 'Homing', description: 'Missiles never miss, +range' },
+                { id: 'radar', name: 'Radar', description: 'Reveals all flying, boosts AA towers' }
+            ]
+        };
+
+        return paths[this.type] || [];
+    }
+
+    chooseUpgradePath(pathId) {
+        if (this.level < 3) return false;
+        if (this.upgradePath) return false;  // Already chosen
+
+        const paths = this.getUpgradePaths();
+        const chosenPath = paths.find(p => p.id === pathId);
+        if (!chosenPath) return false;
+
+        this.upgradePath = pathId;
+        this.applyUpgradePathBonuses();
+        return true;
+    }
+
+    applyUpgradePathBonuses() {
+        if (!this.upgradePath) return;
+
+        // Apply permanent bonuses based on chosen path
+        const bonuses = {
+            // Basic tower paths
+            fortress: () => {
+                this.damage *= 1.5;
+                this.range *= 1.3;
+                this.splashRadius = 40;
+            },
+            rapid: () => {
+                this.fireRate = Math.floor(this.fireRate / 3);
+                this.piercing = true;
+            },
+            support: () => {
+                this.supportRadius = 120;
+                this.supportBoost = 0.25;
+            },
+
+            // Sniper paths
+            marksman: () => {
+                this.range *= 2;
+                this.pierceCount = 3;
+            },
+            assassin: () => {
+                this.critChance = 0.3;
+                this.critMultiplier = 5;
+                this.revealFlying = true;
+            },
+            explosive: () => {
+                this.splashRadius = 50;
+                this.damageType = 'splash';
+            },
+
+            // Rapid paths
+            minigun: () => {
+                this.fireRate = Math.floor(this.fireRate / 2);
+                this.damage *= 1.5;
+            },
+            shredder: () => {
+                this.armorShred = 0.5;
+            },
+            suppressor: () => {
+                this.slowAmount = 0.4;
+                this.slowDuration = 60;
+            },
+
+            // Splash paths
+            nuke: () => {
+                this.splashRadius *= 2;
+                this.damage *= 2;
+            },
+            cluster: () => {
+                this.projectileCount = 3;
+            },
+            napalm: () => {
+                this.burningDamage = 5;
+                this.burningDuration = 180;
+            },
+
+            // Poison paths
+            plague: () => {
+                this.plagueRadius = 60;
+            },
+            venom: () => {
+                this.poisonDamage *= 3;
+                this.damage *= 1.5;
+            },
+            corrosive: () => {
+                this.shieldBreaker = true;
+                this.armorMelt = 0.3;
+            },
+
+            // Freeze paths
+            blizzard: () => {
+                this.freezeRadius = 80;
+                this.permanentSlow = 0.3;
+            },
+            permafrost: () => {
+                this.freezeDuration *= 2;
+                this.shatterDamage = this.damage * 2;
+            },
+            icewall: () => {
+                this.wallDuration = 120;
+            },
+
+            // Electric paths
+            tesla: () => {
+                this.chainCount += 3;
+                this.chainDamageMultiplier = 1.0;  // Full damage on chain
+            },
+            overload: () => {
+                this.stunDuration = 60;
+                this.empShields = true;
+            },
+            conductor: () => {
+                this.chainBack = true;
+            },
+
+            // Laser paths
+            beam: () => {
+                this.beamMode = true;
+                this.beamWidth = 20;
+            },
+            focused: () => {
+                this.damage *= 3;
+                this.armorMelt = 0.5;
+            },
+            prismatic: () => {
+                this.splitBeams = 5;
+            },
+
+            // Antiair paths
+            flak: () => {
+                this.splashRadius = 60;
+                this.groundFlying = true;
+            },
+            homing: () => {
+                this.alwaysHit = true;
+                this.range *= 1.5;
+            },
+            radar: () => {
+                this.revealRadius = 400;
+                this.aaBoost = 0.3;
+            }
+        };
+
+        const applyBonus = bonuses[this.upgradePath];
+        if (applyBonus) {
+            applyBonus();
+        }
     }
 
     update(enemies) {

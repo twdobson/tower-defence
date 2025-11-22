@@ -86,6 +86,108 @@ body {
     text-align: center;
 }
 
+.tower-menu h3:not(:first-child) {
+    margin-top: 20px;
+}
+
+/* Abilities UI */
+.abilities-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.ability-btn {
+    background: rgba(255, 165, 0, 0.3);
+    border: 2px solid #ffa500;
+    border-radius: 8px;
+    padding: 10px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+}
+
+.ability-btn:hover:not(:disabled) {
+    background: rgba(255, 165, 0, 0.4);
+    transform: translateY(-2px);
+}
+
+.ability-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.ability-btn.active {
+    background: rgba(0, 255, 0, 0.3);
+    border-color: #00ff00;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 0 5px rgba(0, 255, 0, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(0, 255, 0, 0.8); }
+}
+
+.ability-btn.targeting {
+    background: rgba(255, 0, 0, 0.3);
+    border-color: #ff0000;
+    animation: targeting-pulse 0.5s infinite;
+}
+
+@keyframes targeting-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.ability-name {
+    font-weight: bold;
+    font-size: 1.05em;
+    margin-bottom: 4px;
+}
+
+.ability-cost {
+    color: #ffd700;
+    font-size: 0.95em;
+    margin-bottom: 2px;
+}
+
+.ability-desc {
+    font-size: 0.8em;
+    opacity: 0.9;
+}
+
+.ability-cooldown {
+    margin-top: 8px;
+    position: relative;
+    height: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.cooldown-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background: linear-gradient(90deg, #ff4444, #ff8844);
+    transition: width 0.1s linear;
+}
+
+.cooldown-text {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.75em;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
 .tower-buttons {
     display: flex;
     flex-direction: column;
@@ -738,5 +840,162 @@ body {
 
     .countdown-timer {
         font-size: 2em;
+    }
+}
+
+/* Upgrade Path Modal */
+.upgrade-path-modal .modal-content {
+    max-width: 800px;
+    width: 90%;
+}
+
+.upgrade-path-options {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.upgrade-path-card {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.15);
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+}
+
+.upgrade-path-card:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: #ffd700;
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.upgrade-path-card.selected {
+    background: rgba(255, 215, 0, 0.3);
+    border-color: #ffd700;
+    border-width: 4px;
+}
+
+.upgrade-path-card h3 {
+    font-size: 1.4em;
+    margin-bottom: 15px;
+    color: #ffd700;
+}
+
+.upgrade-path-card p {
+    font-size: 1em;
+    margin-bottom: 8px;
+    line-height: 1.4;
+    opacity: 0.95;
+}
+
+.upgrade-path-card .path-description {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.upgrade-path-modal .modal-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+    justify-content: center;
+}
+
+.upgrade-path-modal .modal-buttons button {
+    padding: 12px 30px;
+    font-size: 1.1em;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.upgrade-path-modal .confirm-btn {
+    background: #28a745;
+    color: #fff;
+}
+
+.upgrade-path-modal .confirm-btn:hover {
+    background: #218838;
+}
+
+.upgrade-path-modal .confirm-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.upgrade-path-modal .cancel-btn {
+    background: #dc3545;
+    color: #fff;
+}
+
+.upgrade-path-modal .cancel-btn:hover {
+    background: #c82333;
+}
+
+.tower-upgrade-path-info {
+    margin-top: 8px;
+    padding: 8px;
+    background: rgba(255, 215, 0, 0.15);
+    border-radius: 5px;
+    border: 1px solid rgba(255, 215, 0, 0.4);
+}
+
+.tower-upgrade-path-info strong {
+    color: #ffd700;
+}
+
+@media (max-width: 768px) {
+    .abilities-container {
+        gap: 8px;
+    }
+
+    .ability-btn {
+        padding: 12px;
+        min-height: 70px;
+        touch-action: manipulation;
+    }
+
+    .ability-name {
+        font-size: 1em;
+    }
+
+    .ability-cost {
+        font-size: 0.9em;
+    }
+
+    .ability-desc {
+        font-size: 0.75em;
+    }
+
+    .upgrade-path-options {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .upgrade-path-card {
+        min-height: 150px;
+    }
+
+    .upgrade-path-card h3 {
+        font-size: 1.2em;
+    }
+
+    .upgrade-path-card p {
+        font-size: 0.9em;
+    }
+
+    .upgrade-path-modal .modal-buttons button {
+        width: 100%;
     }
 }

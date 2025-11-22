@@ -73,11 +73,17 @@ enabled_services = []
 # Loop through each API and enable it in the GCP project
 for api in apis:
     service = gcp.projects.Service(
-        # Resource name: Convert dots to dashes for Pulumi resource naming
+        # LOGICAL NAME (Pulumi-side tracking only):
+        # This is just for Pulumi's internal state file, not the actual GCP resource name.
+        # We manually create a unique identifier by converting dots to dashes.
         # Example: "run.googleapis.com" becomes "enable-run-googleapis-com"
+        # Note: Pulumi doesn't provide a built-in function for this because it's just
+        # a simple Python string operation for creating unique logical names.
         f"enable-{api.replace('.', '-')}",
 
-        # The actual API service identifier
+        # PHYSICAL NAME (GCP-side):
+        # The actual API service identifier that GCP uses.
+        # This is the real resource name in Google Cloud.
         service=api,
 
         # Which GCP project to enable this API in
@@ -319,40 +325,154 @@ sa_key = gcp.serviceaccount.Key(
 # marks it as a secret (encrypted in state files). When exporting below,
 # we use pulumi.Output.secret() to maintain this protection.
 
-# Export outputs
+# ============================================================================
+# STACK OUTPUTS (EXPORTS)
+# ============================================================================
+# PULUMI EXPORTS EXPLAINED:
+# Exports make values available after "pulumi up" completes. You can view them
+# with "pulumi stack output" or use them as inputs to other Pulumi programs.
+#
+# WHY EXPORT VALUES:
+# - Document what was created (project ID, URLs, etc.)
+# - Provide credentials for CI/CD setup (service account keys)
+# - Pass outputs to other infrastructure stacks (cross-stack references)
+# - Generate setup commands and documentation
+#
+# VIEWING EXPORTS:
+# - pulumi stack output                    # List all outputs
+# - pulumi stack output project_id         # View specific output
+# - pulumi stack output --show-secrets     # Include sensitive values
+
+# Export the GCP project ID
+# Useful for: Verifying which project was used, documentation
 pulumi.export("project_id", project_id)
+
+# Export the GCP region
+# Useful for: Knowing where resources are deployed, multi-region setups
 pulumi.export("region", region)
+
+# Export the service account email address
+# Format: github-actions@project-id.iam.gserviceaccount.com
+# Useful for: Granting this service account access to other resources
 pulumi.export("service_account_email", github_actions_sa.email)
+
+# Export the Artifact Registry repository name
+# Useful for: Docker push commands, Cloud Run deployment configs
 pulumi.export("artifact_registry_repository", gcr_repository.name)
 
-# Export the service account key (base64 encoded JSON)
+# ============================================================================
+# SERVICE ACCOUNT KEY EXPORTS (SENSITIVE CREDENTIALS)
+# ============================================================================
+# These exports contain the actual authentication credentials for the service
+# account. They are automatically marked as secrets by Pulumi.
+
+# Export the service account key in base64-encoded format
+# This is the raw format returned by GCP
+# Used by: GitHub Actions workflows that expect base64-encoded credentials
 pulumi.export(
     "service_account_key_base64",
-    sa_key.private_key,
+    sa_key.private_key,  # Automatically marked as secret by Pulumi
 )
 
-# Export decoded key for easier GitHub secrets setup
+# Export the service account key as plain JSON
+# This makes it easier to work with in some contexts
+# The .apply() transforms the base64 key, and we re-wrap it in secret()
 pulumi.export(
     "service_account_key_json",
     sa_key.private_key.apply(
         lambda key: pulumi.Output.secret(
-            key  # This is already the JSON, base64 decoded by Pulumi
+            # Pulumi automatically base64-decodes sa_key.private_key for us
+            # So 'key' here is already the JSON string, not base64-encoded
+            key
         )
     ),
 )
 
-# Export helpful commands
+# ============================================================================
+# GITHUB SECRETS SETUP COMMANDS
+# ============================================================================
+# This export generates copy-paste commands to configure GitHub repository secrets.
+# These secrets allow GitHub Actions workflows to authenticate with GCP.
+#
+# GITHUB SECRETS:
+# GitHub Secrets are encrypted environment variables stored in your repository.
+# They're accessible to GitHub Actions workflows but hidden from logs.
+#
+# REQUIRED SECRETS:
+# 1. GCP_PROJECT_ID: The GCP project where resources will be deployed
+# 2. GCP_SA_KEY: JSON credentials for the service account
+#
+# SETUP STEPS:
+# 1. Run: pulumi stack output github_secret_setup_commands --show-secrets
+# 2. Copy and run the displayed commands (requires 'gh' CLI installed)
+# 3. Verify secrets in GitHub: Settings → Secrets → Actions
+
 pulumi.export(
     "github_secret_setup_commands",
+    # .Output.all() waits for both values to be available, then applies the lambda
     pulumi.Output.all(project_id, sa_key.private_key).apply(
         lambda args: f"""
-# Set GitHub secrets using these commands:
+# ===================================================================
+# GitHub Secrets Setup Commands
+# ===================================================================
+# Run these commands to configure GitHub Actions for GCP deployment
+# Requires: 'gh' CLI (GitHub CLI) - install from https://cli.github.com
+#
+# What these commands do:
+# 1. Set GCP_PROJECT_ID secret: Tells GitHub Actions which GCP project to use
+# 2. Set GCP_SA_KEY secret: Provides authentication credentials for deployment
 
-# 1. Set GCP_PROJECT_ID:
+# COMMAND 1: Set the GCP project ID
+# This is a simple string value (not sensitive)
 echo "{args[0]}" | gh secret set GCP_PROJECT_ID --repo=twdobson/tower-defence
 
-# 2. Set GCP_SA_KEY (decode the base64 key first):
+# COMMAND 2: Set the service account key (JSON credentials)
+# Process: Pulumi output → base64 decode → set as GitHub secret
+# The --show-secrets flag reveals the encrypted value from Pulumi state
 pulumi stack output service_account_key_base64 --show-secrets | base64 -d | gh secret set GCP_SA_KEY --repo=twdobson/tower-defence
+
+# ===================================================================
+# After running these commands:
+# ===================================================================
+# 1. Verify secrets exist:
+#    gh secret list --repo=twdobson/tower-defence
+#
+# 2. Your GitHub Actions workflow can now use these secrets:
+#    - ${{{{ secrets.GCP_PROJECT_ID }}}}
+#    - ${{{{ secrets.GCP_SA_KEY }}}}
+#
+# 3. GitHub Actions will authenticate and deploy to GCP automatically
+#    whenever you push to the main branch (or trigger the workflow)
 """
     ),
 )
+
+# ============================================================================
+# END OF INFRASTRUCTURE DEFINITION
+# ============================================================================
+# WHAT HAPPENS WHEN YOU RUN "pulumi up":
+# 1. Pulumi reads this file and builds a dependency graph
+# 2. It compares desired state (this code) vs. actual state (cloud resources)
+# 3. It shows you a preview of changes (create, update, delete)
+# 4. After you confirm, it executes the changes in the correct order
+# 5. It saves the new state and displays the exported outputs
+#
+# RESOURCE DEPENDENCIES (order of creation):
+# 1. Enable APIs (run, storage, artifactregistry, cloudbuild)
+# 2. Create service account
+# 3. Grant IAM roles to service account
+# 4. Create Artifact Registry repository (depends on APIs)
+# 5. Generate service account key
+#
+# PULUMI STATE:
+# Pulumi tracks created resources in a state file. This allows it to:
+# - Know what resources it manages (vs. manually created resources)
+# - Detect drift (cloud resources modified outside Pulumi)
+# - Update or delete resources on subsequent "pulumi up" runs
+#
+# COMMON COMMANDS:
+# - pulumi up: Apply changes (create/update resources)
+# - pulumi preview: Show what would change without applying
+# - pulumi destroy: Delete all managed resources
+# - pulumi stack output: View exported values
+# - pulumi refresh: Update state to match actual cloud resources

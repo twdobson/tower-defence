@@ -93,7 +93,38 @@ const gameState = {
     difficulty: 'normal',
     waveCountdown: 0,
     waveCountdownActive: false,
-    gameStarted: false
+    gameStarted: false,
+    // Active abilities system
+    abilities: {
+        airstrike: {
+            name: 'Air Strike',
+            cost: 100,
+            cooldown: 0,
+            maxCooldown: 600,  // 10 seconds at 60 FPS
+            damage: 100,
+            radius: 80
+        },
+        timeslow: {
+            name: 'Time Slow',
+            cost: 80,
+            cooldown: 0,
+            maxCooldown: 900,  // 15 seconds
+            duration: 300,  // 5 seconds
+            slowAmount: 0.5,
+            active: false,
+            timer: 0
+        },
+        towerboost: {
+            name: 'Tower Boost',
+            cost: 60,
+            cooldown: 0,
+            maxCooldown: 720,  // 12 seconds
+            duration: 360,  // 6 seconds
+            boostAmount: 2.0,  // 2x damage
+            active: false,
+            timer: 0
+        }
+    }
 };
 
 function updateUI() {
@@ -199,7 +230,16 @@ function spawnWave() {
     let shieldedCount = wave >= 6 ? Math.floor(wave / 7) : 0;
     let bossCount = wave % 10 === 0 ? 1 : 0;
 
-    gameState.enemiesToSpawn = basicCount + fastCount + tankCount + healerCount + flyingCount + armoredCount + shieldedCount + bossCount;
+    // New enemy types
+    let swarmCount = wave >= 2 ? Math.floor(wave * 2) : 0;  // Lots of swarm enemies
+    let teleporterCount = wave >= 7 ? Math.floor(wave / 8) : 0;
+    let splitterCount = wave >= 5 ? Math.floor(wave / 6) : 0;
+    let spawnerCount = wave >= 8 ? Math.floor(wave / 10) : 0;
+    let resistantCount = wave >= 10 ? Math.floor(wave / 12) : 0;
+
+    gameState.enemiesToSpawn = basicCount + fastCount + tankCount + healerCount + flyingCount +
+                                armoredCount + shieldedCount + bossCount + swarmCount +
+                                teleporterCount + splitterCount + spawnerCount + resistantCount;
     gameState.spawnQueue = [];
 
     for (let i = 0; i < basicCount; i++) {
@@ -222,6 +262,21 @@ function spawnWave() {
     }
     for (let i = 0; i < shieldedCount; i++) {
         gameState.spawnQueue.push('shielded');
+    }
+    for (let i = 0; i < swarmCount; i++) {
+        gameState.spawnQueue.push('swarm');
+    }
+    for (let i = 0; i < teleporterCount; i++) {
+        gameState.spawnQueue.push('teleporter');
+    }
+    for (let i = 0; i < splitterCount; i++) {
+        gameState.spawnQueue.push('splitter');
+    }
+    for (let i = 0; i < spawnerCount; i++) {
+        gameState.spawnQueue.push('spawner');
+    }
+    for (let i = 0; i < resistantCount; i++) {
+        gameState.spawnQueue.push('resistant');
     }
     for (let i = 0; i < bossCount; i++) {
         gameState.spawnQueue.push('boss');
@@ -254,6 +309,15 @@ function spawnEnemy() {
     const enemyType = gameState.spawnQueue.shift();
     const difficultyMod = difficultySettings[gameState.difficulty].enemyHealthMultiplier;
     const enemy = new Enemy(gamePath, enemyType, gameState.wave, difficultyMod);
+
+    // Apply time slow if active
+    const timeslow = gameState.abilities.timeslow;
+    if (timeslow.active) {
+        enemy.originalSpeed = enemy.speed;
+        enemy.speed *= timeslow.slowAmount;
+        enemy.timeSlowed = true;
+    }
+
     gameState.enemies.push(enemy);
     gameState.enemiesSpawned++;
 }
@@ -267,6 +331,46 @@ function updateGame() {
 }
 
 function updateGameLogic() {
+    // Update ability cooldowns
+    for (const abilityKey in gameState.abilities) {
+        const ability = gameState.abilities[abilityKey];
+        if (ability.cooldown > 0) {
+            ability.cooldown--;
+        }
+    }
+
+    // Update Time Slow ability
+    const timeslow = gameState.abilities.timeslow;
+    if (timeslow.active) {
+        timeslow.timer--;
+        if (timeslow.timer <= 0) {
+            timeslow.active = false;
+            // Restore enemy speeds
+            for (const enemy of gameState.enemies) {
+                if (enemy.timeSlowed) {
+                    enemy.speed = enemy.originalSpeed || enemy.speed / timeslow.slowAmount;
+                    enemy.timeSlowed = false;
+                }
+            }
+        }
+    }
+
+    // Update Tower Boost ability
+    const towerboost = gameState.abilities.towerboost;
+    if (towerboost.active) {
+        towerboost.timer--;
+        if (towerboost.timer <= 0) {
+            towerboost.active = false;
+            // Restore tower damage
+            for (const tower of gameState.towers) {
+                if (tower.boosted) {
+                    tower.damage = tower.originalDamage || tower.damage / towerboost.boostAmount;
+                    tower.boosted = false;
+                }
+            }
+        }
+    }
+
     for (let i = gameState.explosions.length - 1; i >= 0; i--) {
         const explosion = gameState.explosions[i];
         explosion.life--;
@@ -310,6 +414,20 @@ function updateGameLogic() {
             const rewardMod = difficultySettings[gameState.difficulty].rewardMultiplier;
             gameState.money += Math.floor(enemy.reward * rewardMod);
             gameState.score += Math.floor(enemy.reward * gameState.wave * rewardMod);
+
+            // Handle splitter enemy splitting
+            if (enemy.shouldSplit) {
+                const difficultyMod = difficultySettings[gameState.difficulty].enemyHealthMultiplier;
+                for (let j = 0; j < 2; j++) {
+                    const splitEnemy = new Enemy(gamePath, 'splitter', gameState.wave, difficultyMod * 0.5);
+                    splitEnemy.pathIndex = enemy.pathIndex;
+                    splitEnemy.x = enemy.x + (Math.random() * 30 - 15);
+                    splitEnemy.y = enemy.y + (Math.random() * 30 - 15);
+                    splitEnemy.splitGeneration = enemy.splitGeneration + 1;
+                    gameState.enemies.push(splitEnemy);
+                }
+            }
+
             gameState.enemies.splice(i, 1);
         }
     }
@@ -486,6 +604,7 @@ function render() {
 function gameLoop() {
     updateGame();
     render();
+    updateAbilityUI();
     requestAnimationFrame(gameLoop);
 }
 
@@ -515,6 +634,16 @@ function resetGame() {
     gameState.spawnTimer = 0;
     gameState.waveCountdown = 0;
     gameState.waveCountdownActive = false;
+
+    // Reset abilities
+    for (const abilityKey in gameState.abilities) {
+        const ability = gameState.abilities[abilityKey];
+        ability.cooldown = 0;
+        if (ability.active !== undefined) {
+            ability.active = false;
+            ability.timer = 0;
+        }
+    }
 
     document.getElementById('gameOverModal').style.display = 'none';
     document.getElementById('towerInfo').style.display = 'none';
@@ -572,6 +701,16 @@ canvas.addEventListener('mousemove', (e) => {
 function handleCanvasInteraction(clientX, clientY) {
     const { x, y } = getCanvasCoordinates(clientX, clientY);
 
+    // Handle airstrike targeting
+    if (airstrikeTargeting) {
+        if (activateAirStrike(x, y)) {
+            airstrikeTargeting = false;
+            canvas.style.cursor = 'default';
+            updateAbilityUI();
+        }
+        return;
+    }
+
     const gridX = Math.floor(x / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
     const gridY = Math.floor(y / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
 
@@ -580,6 +719,15 @@ function handleCanvasInteraction(clientX, clientY) {
 
         if (gameState.money >= tower.cost && !isOnPath(gridX, gridY) && !isTooCloseToTower(gridX, gridY)) {
             const newTower = new Tower(gridX, gridY, gameState.selectedTowerType);
+
+            // Apply tower boost if active
+            const towerboost = gameState.abilities.towerboost;
+            if (towerboost.active) {
+                newTower.originalDamage = newTower.damage;
+                newTower.damage *= towerboost.boostAmount;
+                newTower.boosted = true;
+            }
+
             gameState.towers.push(newTower);
             gameState.money -= newTower.cost;
             updateUI();
@@ -643,6 +791,21 @@ function showTowerInfo(tower) {
     // Calculate DPS (damage per second)
     const dps = tower.fireRate > 0 ? (tower.damage * 60) / tower.fireRate : 0;
 
+    // Get upgrade path info if selected
+    let upgradePathInfo = '';
+    if (tower.upgradePath) {
+        const paths = tower.getUpgradePaths();
+        const selectedPath = paths.find(p => p.id === tower.upgradePath);
+        if (selectedPath) {
+            upgradePathInfo = `
+                <div class="tower-upgrade-path-info">
+                    <strong>Path:</strong> ${selectedPath.name}<br>
+                    <span style="font-size: 0.9em;">${selectedPath.description}</span>
+                </div>
+            `;
+        }
+    }
+
     document.getElementById('towerInfoTitle').textContent = `${tower.type.charAt(0).toUpperCase() + tower.type.slice(1)} Tower (Lvl ${tower.level})`;
     document.getElementById('towerInfoStats').innerHTML = `
         <strong>Stats:</strong><br>
@@ -655,12 +818,18 @@ function showTowerInfo(tower) {
         Kills: ${tower.kills}<br>
         Total Damage: ${Math.floor(tower.totalDamageDealt)}<br>
         Shots Fired: ${tower.shotsFired}
+        ${upgradePathInfo}
     `;
 
     const upgradeBtn = document.getElementById('upgradeTowerBtn');
     const sellBtn = document.getElementById('sellTowerBtn');
 
-    upgradeBtn.textContent = `Upgrade ($${upgradeCost})`;
+    // Change button text if tower is level 2 and hasn't chosen a path
+    if (tower.level === 2 && !tower.upgradePath) {
+        upgradeBtn.textContent = `Upgrade & Choose Path ($${upgradeCost})`;
+    } else {
+        upgradeBtn.textContent = `Upgrade ($${upgradeCost})`;
+    }
     upgradeBtn.disabled = gameState.money < upgradeCost || tower.level >= 5;
 
     sellBtn.textContent = `Sell ($${tower.sellValue})`;
@@ -709,11 +878,18 @@ document.getElementById('upgradeTowerBtn').addEventListener('click', () => {
     if (gameState.selectedTower) {
         const upgradeCost = gameState.selectedTower.getUpgradeCost();
         if (gameState.money >= upgradeCost) {
-            gameState.money -= upgradeCost;
-            gameState.selectedTower.upgrade();
-            gameState.selectedTower.sellValue = Math.floor(gameState.selectedTower.sellValue * 1.5);
-            showTowerInfo(gameState.selectedTower);
-            updateUI();
+            // Check if tower is level 2 and hasn't chosen a path yet
+            if (gameState.selectedTower.level === 2 && !gameState.selectedTower.upgradePath) {
+                // Show upgrade path selection modal
+                showUpgradePathModal(gameState.selectedTower, upgradeCost);
+            } else {
+                // Normal upgrade
+                gameState.money -= upgradeCost;
+                gameState.selectedTower.upgrade();
+                gameState.selectedTower.sellValue = Math.floor(gameState.selectedTower.sellValue * 1.5);
+                showTowerInfo(gameState.selectedTower);
+                updateUI();
+            }
         }
     }
 });
@@ -729,6 +905,247 @@ document.getElementById('speedBtn').addEventListener('click', () => {
     const nextIndex = (currentIndex + 1) % speeds.length;
     gameState.gameSpeed = speeds[nextIndex];
     document.getElementById('speedBtn').textContent = `Speed: ${gameState.gameSpeed}x`;
+});
+
+// Active Ability Functions
+function activateAirStrike(x, y) {
+    const ability = gameState.abilities.airstrike;
+
+    if (ability.cooldown > 0 || gameState.money < ability.cost) {
+        return false;
+    }
+
+    // Deduct cost and start cooldown
+    gameState.money -= ability.cost;
+    ability.cooldown = ability.maxCooldown;
+
+    // Deal damage to all enemies in radius
+    for (const enemy of gameState.enemies) {
+        const dx = enemy.x - x;
+        const dy = enemy.y - y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance <= ability.radius) {
+            enemy.takeDamage(ability.damage, 'splash');
+        }
+    }
+
+    // Create large explosion effect
+    gameState.explosions.push({
+        x: x,
+        y: y,
+        radius: 20,
+        life: 40,
+        opacity: 1,
+        color: '#ff4500'
+    });
+
+    updateUI();
+    return true;
+}
+
+function activateTimeSlow() {
+    const ability = gameState.abilities.timeslow;
+
+    if (ability.cooldown > 0 || gameState.money < ability.cost || ability.active) {
+        return false;
+    }
+
+    // Deduct cost and start cooldown
+    gameState.money -= ability.cost;
+    ability.cooldown = ability.maxCooldown;
+    ability.active = true;
+    ability.timer = ability.duration;
+
+    // Slow all enemies
+    for (const enemy of gameState.enemies) {
+        if (!enemy.originalSpeed) {
+            enemy.originalSpeed = enemy.speed;
+        }
+        enemy.speed *= ability.slowAmount;
+        enemy.timeSlowed = true;
+    }
+
+    updateUI();
+    return true;
+}
+
+function activateTowerBoost() {
+    const ability = gameState.abilities.towerboost;
+
+    if (ability.cooldown > 0 || gameState.money < ability.cost || ability.active) {
+        return false;
+    }
+
+    // Deduct cost and start cooldown
+    gameState.money -= ability.cost;
+    ability.cooldown = ability.maxCooldown;
+    ability.active = true;
+    ability.timer = ability.duration;
+
+    // Boost all towers
+    for (const tower of gameState.towers) {
+        if (!tower.originalDamage) {
+            tower.originalDamage = tower.damage;
+        }
+        tower.damage *= ability.boostAmount;
+        tower.boosted = true;
+    }
+
+    updateUI();
+    return true;
+}
+
+// Ability UI State
+let airstrikeTargeting = false;
+
+// Update ability UI
+function updateAbilityUI() {
+    for (const abilityKey in gameState.abilities) {
+        const ability = gameState.abilities[abilityKey];
+        const btn = document.getElementById(`${abilityKey}Btn`);
+        if (!btn) continue;
+
+        const cooldownDiv = btn.querySelector('.ability-cooldown');
+        const cooldownBar = btn.querySelector('.cooldown-bar');
+        const cooldownText = btn.querySelector('.cooldown-text');
+
+        // Check if ability can be used
+        const canUse = ability.cooldown === 0 && gameState.money >= ability.cost && !gameState.gameOver;
+        btn.disabled = !canUse;
+
+        // Show cooldown if on cooldown
+        if (ability.cooldown > 0) {
+            cooldownDiv.style.display = 'block';
+            const percentage = (ability.cooldown / ability.maxCooldown) * 100;
+            cooldownBar.style.width = percentage + '%';
+            cooldownText.textContent = Math.ceil(ability.cooldown / 60) + 's';
+        } else {
+            cooldownDiv.style.display = 'none';
+        }
+
+        // Show active state for timed abilities
+        if (ability.active) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    }
+
+    // Handle airstrike targeting mode
+    const airstrikeBtn = document.getElementById('airstrikeBtn');
+    if (airstrikeTargeting) {
+        airstrikeBtn.classList.add('targeting');
+    } else {
+        airstrikeBtn.classList.remove('targeting');
+    }
+}
+
+// Setup ability button handlers
+document.getElementById('airstrikeBtn').addEventListener('click', () => {
+    const ability = gameState.abilities.airstrike;
+    if (ability.cooldown === 0 && gameState.money >= ability.cost && !airstrikeTargeting) {
+        airstrikeTargeting = true;
+        canvas.style.cursor = 'crosshair';
+        updateAbilityUI();
+    }
+});
+
+document.getElementById('timeslowBtn').addEventListener('click', () => {
+    if (activateTimeSlow()) {
+        updateAbilityUI();
+    }
+});
+
+document.getElementById('towerboostBtn').addEventListener('click', () => {
+    if (activateTowerBoost()) {
+        updateAbilityUI();
+    }
+});
+
+// Upgrade Path Modal Functions
+let selectedUpgradePath = null;
+let pendingTowerUpgrade = null;
+let pendingUpgradeCost = 0;
+
+function showUpgradePathModal(tower, upgradeCost) {
+    const modal = document.getElementById('upgradePathModal');
+    const optionsContainer = document.getElementById('upgradePathOptions');
+
+    pendingTowerUpgrade = tower;
+    pendingUpgradeCost = upgradeCost;
+    selectedUpgradePath = null;
+
+    // Get upgrade paths for this tower type
+    const paths = tower.getUpgradePaths();
+
+    // Clear existing options
+    optionsContainer.innerHTML = '';
+
+    // Create cards for each path
+    paths.forEach(path => {
+        const card = document.createElement('div');
+        card.className = 'upgrade-path-card';
+        card.dataset.pathId = path.id;
+        card.innerHTML = `
+            <h3>${path.name}</h3>
+            <div class="path-description">
+                <p>${path.description}</p>
+            </div>
+        `;
+
+        card.addEventListener('click', () => {
+            // Remove selection from all cards
+            document.querySelectorAll('.upgrade-path-card').forEach(c => {
+                c.classList.remove('selected');
+            });
+
+            // Select this card
+            card.classList.add('selected');
+            selectedUpgradePath = path.id;
+
+            // Enable confirm button
+            document.getElementById('confirmUpgradePath').disabled = false;
+        });
+
+        optionsContainer.appendChild(card);
+    });
+
+    // Reset and show modal
+    document.getElementById('confirmUpgradePath').disabled = true;
+    modal.style.display = 'flex';
+}
+
+document.getElementById('confirmUpgradePath').addEventListener('click', () => {
+    if (selectedUpgradePath && pendingTowerUpgrade) {
+        // Apply the upgrade
+        gameState.money -= pendingUpgradeCost;
+        pendingTowerUpgrade.upgrade();
+        pendingTowerUpgrade.chooseUpgradePath(selectedUpgradePath);
+        pendingTowerUpgrade.sellValue = Math.floor(pendingTowerUpgrade.sellValue * 1.5);
+
+        // Close modal
+        document.getElementById('upgradePathModal').style.display = 'none';
+
+        // Update UI
+        showTowerInfo(pendingTowerUpgrade);
+        updateUI();
+
+        // Clear pending data
+        selectedUpgradePath = null;
+        pendingTowerUpgrade = null;
+        pendingUpgradeCost = 0;
+    }
+});
+
+document.getElementById('cancelUpgradePath').addEventListener('click', () => {
+    // Close modal without upgrading
+    document.getElementById('upgradePathModal').style.display = 'none';
+
+    // Clear pending data
+    selectedUpgradePath = null;
+    pendingTowerUpgrade = null;
+    pendingUpgradeCost = 0;
 });
 
 function updateWavePreview() {
@@ -747,6 +1164,13 @@ function updateWavePreview() {
     let shieldedCount = nextWave >= 6 ? Math.floor(nextWave / 7) : 0;
     let bossCount = nextWave % 10 === 0 ? 1 : 0;
 
+    // New enemy types
+    let swarmCount = nextWave >= 2 ? Math.floor(nextWave * 2) : 0;
+    let teleporterCount = nextWave >= 7 ? Math.floor(nextWave / 8) : 0;
+    let splitterCount = nextWave >= 5 ? Math.floor(nextWave / 6) : 0;
+    let spawnerCount = nextWave >= 8 ? Math.floor(nextWave / 10) : 0;
+    let resistantCount = nextWave >= 10 ? Math.floor(nextWave / 12) : 0;
+
     let preview = '';
     if (basicCount > 0) preview += `<div class="enemy-preview"><span style="color:#ff4444">● Basic</span><span>${basicCount}</span></div>`;
     if (fastCount > 0) preview += `<div class="enemy-preview"><span style="color:#44ff44">● Fast</span><span>${fastCount}</span></div>`;
@@ -755,6 +1179,11 @@ function updateWavePreview() {
     if (flyingCount > 0) preview += `<div class="enemy-preview"><span style="color:#ffaa00">● Flying</span><span>${flyingCount}</span><div style="font-size:10px;color:#888;margin-top:2px">Immune: ground towers</div></div>`;
     if (armoredCount > 0) preview += `<div class="enemy-preview"><span style="color:#888888">● Armored</span><span>${armoredCount}</span><div style="font-size:10px;color:#888;margin-top:2px">Weak: pierce/splash</div></div>`;
     if (shieldedCount > 0) preview += `<div class="enemy-preview"><span style="color:#aaaaff">● Shielded</span><span>${shieldedCount}</span><div style="font-size:10px;color:#888;margin-top:2px">Weak: poison</div></div>`;
+    if (swarmCount > 0) preview += `<div class="enemy-preview"><span style="color:#ff69b4">● Swarm</span><span>${swarmCount}</span><div style="font-size:10px;color:#888;margin-top:2px">Weak: splash</div></div>`;
+    if (teleporterCount > 0) preview += `<div class="enemy-preview"><span style="color:#00ffff">● Teleporter</span><span>${teleporterCount}</span><div style="font-size:10px;color:#888;margin-top:2px">Jumps forward!</div></div>`;
+    if (splitterCount > 0) preview += `<div class="enemy-preview"><span style="color:#9370db">● Splitter</span><span>${splitterCount}</span><div style="font-size:10px;color:#888;margin-top:2px">Splits on death</div></div>`;
+    if (spawnerCount > 0) preview += `<div class="enemy-preview"><span style="color:#ff1493">● Spawner</span><span>${spawnerCount}</span><div style="font-size:10px;color:#888;margin-top:2px">Spawns swarms</div></div>`;
+    if (resistantCount > 0) preview += `<div class="enemy-preview"><span style="color:#696969">● Resistant</span><span>${resistantCount}</span><div style="font-size:10px;color:#888;margin-top:2px">Resists all damage</div></div>`;
     if (bossCount > 0) preview += `<div class="enemy-preview"><span style="color:#ff00ff">◆ BOSS</span><span>${bossCount}</span></div>`;
 
     document.getElementById('wavePreviewContent').innerHTML = preview;

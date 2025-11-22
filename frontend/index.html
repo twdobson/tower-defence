@@ -38,6 +38,37 @@
             <canvas id="gameCanvas" width="800" height="600"></canvas>
 
             <div class="tower-menu">
+                <h3>Active Abilities</h3>
+                <div class="abilities-container">
+                    <button id="airstrikeBtn" class="ability-btn" data-ability="airstrike">
+                        <div class="ability-name">Air Strike</div>
+                        <div class="ability-cost">$100</div>
+                        <div class="ability-desc">Click to target</div>
+                        <div class="ability-cooldown" style="display: none;">
+                            <div class="cooldown-bar"></div>
+                            <span class="cooldown-text">10s</span>
+                        </div>
+                    </button>
+                    <button id="timeslowBtn" class="ability-btn" data-ability="timeslow">
+                        <div class="ability-name">Time Slow</div>
+                        <div class="ability-cost">$80</div>
+                        <div class="ability-desc">Slows all enemies</div>
+                        <div class="ability-cooldown" style="display: none;">
+                            <div class="cooldown-bar"></div>
+                            <span class="cooldown-text">15s</span>
+                        </div>
+                    </button>
+                    <button id="towerboostBtn" class="ability-btn" data-ability="towerboost">
+                        <div class="ability-name">Tower Boost</div>
+                        <div class="ability-cost">$60</div>
+                        <div class="ability-desc">2x tower damage</div>
+                        <div class="ability-cooldown" style="display: none;">
+                            <div class="cooldown-bar"></div>
+                            <span class="cooldown-text">12s</span>
+                        </div>
+                    </button>
+                </div>
+
                 <h3>Towers</h3>
                 <div class="tower-buttons">
                     <button class="tower-btn" data-type="basic">
@@ -155,6 +186,20 @@
             <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
             <button id="submitScore">Submit Score</button>
             <button id="playAgain">Play Again</button>
+        </div>
+    </div>
+
+    <div id="upgradePathModal" class="modal upgrade-path-modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Choose Upgrade Path - Level 3</h2>
+            <p>Select a specialization path for this tower. This choice is permanent!</p>
+            <div id="upgradePathOptions" class="upgrade-path-options">
+                <!-- Upgrade path cards will be dynamically inserted here -->
+            </div>
+            <div class="modal-buttons">
+                <button id="confirmUpgradePath" class="confirm-btn" disabled>Confirm Choice</button>
+                <button id="cancelUpgradePath" class="cancel-btn">Cancel</button>
+            </div>
         </div>
     </div>
 

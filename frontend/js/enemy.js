@@ -128,6 +128,81 @@ class Enemy {
                 this.resistances.rapid = 0.6;
                 this.resistances.freeze = 0.5;
                 break;
+            case 'swarm':
+                // NEW: Tiny fast enemies that come in groups
+                this.maxHealth = 20 * scaleMultiplier;
+                this.speed = 2.5;
+                this.reward = 8;
+                this.damage = 1;
+                this.color = '#ff69b4';
+                this.size = 5;
+                this.flying = false;
+                // Weak to splash damage
+                this.resistances.splash = 2.0;
+                this.resistances.pierce = 1.5;
+                break;
+            case 'teleporter':
+                // NEW: Can teleport forward on the path
+                this.maxHealth = 60 * scaleMultiplier;
+                this.speed = 0.8;
+                this.reward = 40;
+                this.damage = 1;
+                this.color = '#00ffff';
+                this.size = 9;
+                this.flying = false;
+                this.teleportCooldown = 180;  // 3 seconds
+                this.teleportTimer = this.teleportCooldown;
+                this.teleportDistance = 5;  // Jump 5 path points ahead
+                // Resistant to normal damage
+                this.resistances.normal = 0.5;
+                break;
+            case 'splitter':
+                // NEW: Splits into 2 smaller enemies when killed
+                this.maxHealth = 90 * scaleMultiplier;
+                this.speed = 1.2;
+                this.reward = 35;
+                this.damage = 2;
+                this.color = '#9370db';
+                this.size = 10;
+                this.flying = false;
+                this.canSplit = true;
+                this.splitGeneration = 0;  // Track split generation
+                // Weak to pierce damage
+                this.resistances.pierce = 1.5;
+                break;
+            case 'spawner':
+                // NEW: Periodically spawns basic enemies
+                this.maxHealth = 120 * scaleMultiplier;
+                this.speed = 0.7;
+                this.reward = 50;
+                this.damage = 1;
+                this.color = '#ff1493';
+                this.size = 12;
+                this.flying = false;
+                this.spawnCooldown = 240;  // 4 seconds
+                this.spawnTimer = this.spawnCooldown;
+                // Resistant to rapid fire
+                this.resistances.rapid = 0.4;
+                this.resistances.splash = 1.3;
+                break;
+            case 'resistant':
+                // NEW: Highly resistant to all damage
+                this.maxHealth = 200 * scaleMultiplier;
+                this.speed = 0.5;
+                this.reward = 60;
+                this.damage = 3;
+                this.color = '#696969';
+                this.size = 13;
+                this.flying = false;
+                // Resistant to everything!
+                this.resistances.normal = 0.3;
+                this.resistances.rapid = 0.3;
+                this.resistances.splash = 0.3;
+                this.resistances.pierce = 0.4;
+                this.resistances.freeze = 0.3;
+                this.resistances.poison = 0.3;
+                this.resistances.electric = 0.4;
+                break;
         }
 
         this.health = this.maxHealth;
@@ -205,6 +280,35 @@ class Enemy {
             }
         }
 
+        // Teleporter ability
+        if (this.type === 'teleporter' && this.teleportTimer > 0) {
+            this.teleportTimer--;
+            if (this.teleportTimer === 0) {
+                // Teleport forward on path
+                const newIndex = Math.min(this.pathIndex + this.teleportDistance, this.path.length - 1);
+                if (newIndex !== this.pathIndex) {
+                    this.pathIndex = newIndex;
+                    this.x = this.path[this.pathIndex].x;
+                    this.y = this.path[this.pathIndex].y;
+                    this.teleportTimer = this.teleportCooldown;  // Reset cooldown
+                }
+            }
+        }
+
+        // Spawner ability
+        if (this.type === 'spawner' && this.spawnTimer > 0 && enemies) {
+            this.spawnTimer--;
+            if (this.spawnTimer === 0) {
+                // Spawn a swarm enemy at current position
+                const spawnedEnemy = new Enemy(this.path, 'swarm', this.wave, 1.0);
+                spawnedEnemy.pathIndex = this.pathIndex;
+                spawnedEnemy.x = this.x + (Math.random() * 40 - 20);  // Random offset
+                spawnedEnemy.y = this.y + (Math.random() * 40 - 20);
+                enemies.push(spawnedEnemy);
+                this.spawnTimer = this.spawnCooldown;  // Reset cooldown
+            }
+        }
+
         return 'moving';
     }
 
@@ -227,6 +331,7 @@ class Enemy {
 
         if (this.health <= 0) {
             this.alive = false;
+            this.shouldSplit = this.canSplit && this.splitGeneration < 2;  // Max 2 generations of splits
             return true;
         }
         return false;
@@ -284,6 +389,54 @@ class Enemy {
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.healRange, 0, Math.PI * 2);
             ctx.stroke();
+        }
+
+        // Teleporter visual effect (glowing aura)
+        if (this.type === 'teleporter') {
+            const glowIntensity = Math.sin(Date.now() / 200) * 0.3 + 0.5;
+            ctx.strokeStyle = `rgba(0, 255, 255, ${glowIntensity})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size + 3, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        // Splitter visual effect (multiple circles)
+        if (this.type === 'splitter' || this.canSplit) {
+            ctx.strokeStyle = 'rgba(147, 112, 219, 0.6)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size - 2, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        // Spawner visual effect (pulsing ring)
+        if (this.type === 'spawner') {
+            const pulse = Math.sin(Date.now() / 300) * 3;
+            ctx.strokeStyle = 'rgba(255, 20, 147, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size + pulse, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        // Resistant visual effect (armored layers)
+        if (this.type === 'resistant') {
+            for (let i = 0; i < 2; i++) {
+                ctx.strokeStyle = `rgba(105, 105, 105, ${0.4 - i * 0.1})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size + i * 2, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        }
+
+        // Swarm visual effect (smaller cluster indicator)
+        if (this.type === 'swarm') {
+            ctx.fillStyle = 'rgba(255, 105, 180, 0.3)';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size + 2, 0, Math.PI * 2);
+            ctx.fill();
         }
 
         const healthBarWidth = this.size * 2;
