@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tower Defense Game</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="game-header">
+            <h1>Tower Defense</h1>
+            <div class="game-stats">
+                <div class="stat">
+                    <span class="stat-label">Health:</span>
+                    <span id="health" class="stat-value">100</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Money:</span>
+                    <span id="money" class="stat-value">500</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Wave:</span>
+                    <span id="wave" class="stat-value">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Score:</span>
+                    <span id="score" class="stat-value">0</span>
+                </div>
+                <div class="game-controls">
+                    <button id="pauseBtn" class="control-btn">⏸ Pause</button>
+                    <button id="speedBtn" class="control-btn" data-speed="1">Speed: 1x</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="game-area">
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+            <div class="tower-menu">
+                <h3>Towers</h3>
+                <div class="tower-buttons">
+                    <button class="tower-btn" data-type="basic">
+                        <span class="tower-hotkey">1</span>
+                        <div class="tower-name">Basic Tower</div>
+                        <div class="tower-cost">$50</div>
+                        <div class="tower-stats">Balanced starter tower</div>
+                    </button>
+                    <button class="tower-btn" data-type="rapid">
+                        <span class="tower-hotkey">2</span>
+                        <div class="tower-name">Rapid Tower</div>
+                        <div class="tower-cost">$100</div>
+                        <div class="tower-stats">Very fast attacks</div>
+                    </button>
+                    <button class="tower-btn" data-type="sniper">
+                        <span class="tower-hotkey">3</span>
+                        <div class="tower-name">Sniper Tower</div>
+                        <div class="tower-cost">$120</div>
+                        <div class="tower-stats">Long range, high damage</div>
+                    </button>
+                    <button class="tower-btn" data-type="poison">
+                        <span class="tower-hotkey">4</span>
+                        <div class="tower-name">Poison Tower</div>
+                        <div class="tower-cost">$140</div>
+                        <div class="tower-stats">Damage over time</div>
+                    </button>
+                    <button class="tower-btn" data-type="splash">
+                        <span class="tower-hotkey">5</span>
+                        <div class="tower-name">Splash Tower</div>
+                        <div class="tower-cost">$150</div>
+                        <div class="tower-stats">Area damage</div>
+                    </button>
+                    <button class="tower-btn" data-type="antiair">
+                        <span class="tower-hotkey">6</span>
+                        <div class="tower-name">Anti-Air Tower</div>
+                        <div class="tower-cost">$160</div>
+                        <div class="tower-stats">Targets flying only</div>
+                    </button>
+                    <button class="tower-btn" data-type="freeze">
+                        <span class="tower-hotkey">7</span>
+                        <div class="tower-name">Freeze Tower</div>
+                        <div class="tower-cost">$180</div>
+                        <div class="tower-stats">Slows enemies</div>
+                    </button>
+                    <button class="tower-btn" data-type="electric">
+                        <span class="tower-hotkey">8</span>
+                        <div class="tower-name">Electric Tower</div>
+                        <div class="tower-cost">$200</div>
+                        <div class="tower-stats">Chain lightning</div>
+                    </button>
+                    <button class="tower-btn" data-type="laser">
+                        <span class="tower-hotkey">9</span>
+                        <div class="tower-name">Laser Tower</div>
+                        <div class="tower-cost">$250</div>
+                        <div class="tower-stats">Continuous beam</div>
+                    </button>
+                </div>
+                <div id="towerInfo" class="tower-info" style="display: none;">
+                    <h4 id="towerInfoTitle">Tower Selected</h4>
+                    <div id="towerInfoStats"></div>
+                    <button id="upgradeTowerBtn" class="upgrade-tower-btn">Upgrade ($0)</button>
+                    <button id="sellTowerBtn" class="sell-tower-btn">Sell ($0)</button>
+                </div>
+                <div id="waveCountdown" class="wave-countdown" style="display: none;">
+                    <h4>Next Wave Starting In</h4>
+                    <div id="countdownTimer" class="countdown-timer">10</div>
+                    <button id="startWaveNowBtn" class="start-wave-now-btn">Start Now</button>
+                </div>
+                <div id="wavePreview" class="wave-preview" style="display: none;">
+                    <h4>Next Wave</h4>
+                    <div id="wavePreviewContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="leaderboard-section">
+            <h2>Leaderboard</h2>
+            <div id="leaderboard" class="leaderboard">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="difficultyModal" class="modal" style="display: flex;">
+        <div class="modal-content">
+            <h2>Select Difficulty</h2>
+            <div class="difficulty-options">
+                <button class="difficulty-btn" data-difficulty="easy">
+                    <h3>Easy</h3>
+                    <p>Extra starting money and health</p>
+                    <p>Enemies have less health</p>
+                    <p>Perfect for learning</p>
+                </button>
+                <button class="difficulty-btn" data-difficulty="normal">
+                    <h3>Normal</h3>
+                    <p>Balanced experience</p>
+                    <p>Standard challenge</p>
+                    <p>Recommended for most players</p>
+                </button>
+                <button class="difficulty-btn" data-difficulty="hard">
+                    <h3>Hard</h3>
+                    <p>Less starting resources</p>
+                    <p>Tougher enemies</p>
+                    <p>For experienced players</p>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gameOverModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Game Over!</h2>
+            <p>Final Score: <span id="finalScore">0</span></p>
+            <p>Waves Survived: <span id="finalWave">0</span></p>
+            <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
+            <button id="submitScore">Submit Score</button>
+            <button id="playAgain">Play Again</button>
+        </div>
+    </div>
+
+    <script src="js/enemy.js"></script>
+    <script src="js/tower.js"></script>
+    <script src="js/projectile.js"></script>
+    <script src="js/leaderboard.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
