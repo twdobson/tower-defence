@@ -27,3 +27,8 @@ Thumbs.db
 # Build
 dist/
 build/
+
+# GCP credentials
+gcp-key*.json
+key.json
+*.json.key
