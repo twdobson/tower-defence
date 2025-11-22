@@ -14,7 +14,22 @@
       "Bash(git push:*)",
       "Bash(gh run watch:*)",
       "Bash(gcloud artifacts repositories create:*)",
-      "Bash(gcloud run services describe:*)"
+      "Bash(gcloud run services describe:*)",
+      "Bash(brew install:*)",
+      "Bash(pulumi version:*)",
+      "Bash(python3:*)",
+      "Bash(source:*)",
+      "Bash(pip install:*)",
+      "Bash(pulumi login:*)",
+      "Bash(pulumi stack init:*)",
+      "Bash(export PULUMI_CONFIG_PASSPHRASE=\"tower-defence-dev\")",
+      "Bash(pulumi config set:*)",
+      "Bash(pulumi preview:*)",
+      "Bash(echo:*)",
+      "Bash(Pulumi.dev.yaml)",
+      "Bash(./teardown-gcp.sh)",
+      "Bash(pulumi up:*)",
+      "Bash(./setup-github-secrets.sh)"
     ],
     "deny": [],
     "ask": []

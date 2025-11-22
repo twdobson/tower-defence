@@ -1,11 +1,3 @@
 name: tower-defence-gcp
 runtime: python
 description: GCP infrastructure for Tower Defense game deployment
-
-config:
-  gcp:project:
-    description: The GCP project ID
-    default: game-zone-479009
-  gcp:region:
-    description: The GCP region
-    default: us-central1
