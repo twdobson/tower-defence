@@ -30,8 +30,10 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Configure Docker to use gcloud
-        run: gcloud auth configure-docker
+      - name: Set GCP project and configure Docker
+        run: |
+          gcloud config set project $PROJECT_ID
+          gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://gcr.io
 
       - name: Build Docker image
         run: |
