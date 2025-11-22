@@ -17,6 +17,7 @@ class Tower {
                 this.projectileColor = '#ffff00';
                 this.splashRadius = 0;
                 this.special = null;
+                this.damageType = 'normal';
                 break;
             case 'sniper':
                 this.damage = 40;
@@ -27,6 +28,7 @@ class Tower {
                 this.projectileColor = '#ff6600';
                 this.splashRadius = 0;
                 this.special = null;
+                this.damageType = 'pierce';
                 break;
             case 'splash':
                 this.damage = 18;
@@ -37,6 +39,7 @@ class Tower {
                 this.projectileColor = '#ff0000';
                 this.splashRadius = 60;
                 this.special = null;
+                this.damageType = 'splash';
                 break;
             case 'rapid':
                 this.damage = 6;
@@ -47,6 +50,7 @@ class Tower {
                 this.projectileColor = '#00ffff';
                 this.splashRadius = 0;
                 this.special = null;
+                this.damageType = 'rapid';
                 break;
             case 'freeze':
                 this.damage = 8;
@@ -58,6 +62,7 @@ class Tower {
                 this.splashRadius = 0;
                 this.special = 'freeze';
                 this.freezeDuration = 90;
+                this.damageType = 'freeze';
                 break;
             case 'poison':
                 this.damage = 10;
@@ -70,6 +75,7 @@ class Tower {
                 this.special = 'poison';
                 this.poisonDamage = 2;
                 this.poisonDuration = 120;
+                this.damageType = 'poison';
                 break;
             case 'electric':
                 this.damage = 15;
@@ -82,6 +88,7 @@ class Tower {
                 this.special = 'electric';
                 this.chainCount = 3;
                 this.chainRange = 80;
+                this.damageType = 'electric';
                 break;
             case 'laser':
                 this.damage = 25;
@@ -92,6 +99,7 @@ class Tower {
                 this.projectileColor = '#c0392b';
                 this.splashRadius = 0;
                 this.special = 'laser';
+                this.damageType = 'pierce';
                 break;
             case 'antiair':
                 this.damage = 20;
@@ -102,9 +110,13 @@ class Tower {
                 this.projectileColor = '#1abc9c';
                 this.splashRadius = 0;
                 this.special = 'antiair';
+                this.damageType = 'pierce';
                 break;
         }
 
+        this.kills = 0;
+        this.totalDamageDealt = 0;
+        this.shotsFired = 0;
         this.sellValue = Math.floor(this.cost * 0.7);
     }
 
@@ -155,6 +167,8 @@ class Tower {
     shoot() {
         if (!this.target) return null;
 
+        this.shotsFired++;
+
         const projectile = new Projectile(
             this.x,
             this.y,
@@ -165,6 +179,8 @@ class Tower {
         );
 
         projectile.special = this.special;
+        projectile.damageType = this.damageType;
+        projectile.tower = this;  // Track which tower fired this
         if (this.special === 'freeze') {
             projectile.freezeDuration = this.freezeDuration;
         } else if (this.special === 'poison') {

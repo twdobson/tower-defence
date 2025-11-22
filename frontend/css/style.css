@@ -474,3 +474,269 @@ body {
 .start-wave-now-btn:hover {
     background: #218838;
 }
+
+/* Mobile Responsive Styles */
+@media (max-width: 1024px) {
+    body {
+        padding: 10px;
+    }
+
+    .game-header h1 {
+        font-size: 2em;
+    }
+
+    .game-stats {
+        gap: 15px;
+        padding: 10px;
+    }
+
+    .stat-label {
+        font-size: 0.9em;
+    }
+
+    .stat-value {
+        font-size: 1.1em;
+    }
+
+    .game-area {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    #gameCanvas {
+        width: 100% !important;
+        height: auto !important;
+        max-width: 800px;
+        margin: 0 auto;
+        display: block;
+        touch-action: none;
+    }
+
+    .tower-menu {
+        width: 100%;
+        max-height: none;
+        order: 2;
+    }
+
+    .modal-content {
+        min-width: 90%;
+        padding: 30px 20px;
+    }
+
+    .difficulty-options {
+        flex-direction: column;
+        gap: 15px;
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 5px;
+    }
+
+    .game-header h1 {
+        font-size: 1.5em;
+        margin-bottom: 10px;
+    }
+
+    .game-stats {
+        gap: 10px;
+        padding: 8px;
+        font-size: 0.9em;
+    }
+
+    .stat {
+        flex-direction: column;
+        gap: 2px;
+        text-align: center;
+    }
+
+    .stat-label {
+        font-size: 0.8em;
+    }
+
+    .stat-value {
+        font-size: 1em;
+    }
+
+    .game-controls {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .control-btn {
+        padding: 10px 14px;
+        font-size: 0.9em;
+    }
+
+    #gameCanvas {
+        border: 2px solid #fff;
+        border-radius: 5px;
+    }
+
+    .tower-menu h3 {
+        font-size: 1.2em;
+        margin-bottom: 10px;
+    }
+
+    .tower-buttons {
+        gap: 8px;
+    }
+
+    .tower-btn {
+        padding: 14px;
+        min-height: 70px;
+        touch-action: manipulation;
+    }
+
+    .tower-btn:active {
+        transform: scale(0.98);
+    }
+
+    .tower-name {
+        font-size: 1.1em;
+        margin-bottom: 3px;
+    }
+
+    .tower-cost {
+        font-size: 1em;
+    }
+
+    .tower-stats {
+        font-size: 0.85em;
+    }
+
+    /* Hide keyboard shortcuts on mobile */
+    .tower-hotkey {
+        display: none;
+    }
+
+    .start-wave-btn,
+    .sell-tower-btn,
+    .upgrade-tower-btn,
+    .start-wave-now-btn {
+        padding: 16px;
+        font-size: 1.1em;
+        min-height: 50px;
+        touch-action: manipulation;
+    }
+
+    .tower-info {
+        padding: 12px;
+    }
+
+    .tower-info h4 {
+        font-size: 1em;
+    }
+
+    #towerInfoStats {
+        font-size: 0.85em;
+    }
+
+    .wave-preview {
+        padding: 12px;
+    }
+
+    .wave-preview h4 {
+        font-size: 1em;
+    }
+
+    #wavePreviewContent {
+        font-size: 0.8em;
+    }
+
+    .wave-countdown {
+        padding: 12px;
+    }
+
+    .countdown-timer {
+        font-size: 2.5em;
+    }
+
+    .modal-content {
+        padding: 20px 15px;
+        min-width: 95%;
+    }
+
+    .modal-content h2 {
+        font-size: 1.8em;
+    }
+
+    .modal-content p {
+        font-size: 1em;
+    }
+
+    .modal-content button {
+        padding: 12px 20px;
+        font-size: 1em;
+        width: 100%;
+        margin: 5px 0;
+    }
+
+    .difficulty-btn {
+        padding: 15px;
+    }
+
+    .difficulty-btn h3 {
+        font-size: 1.3em;
+    }
+
+    .difficulty-btn p {
+        font-size: 0.85em;
+    }
+
+    .leaderboard-section {
+        padding: 15px;
+    }
+
+    .leaderboard-entry {
+        padding: 10px;
+        font-size: 0.9em;
+    }
+}
+
+@media (max-width: 480px) {
+    .game-header h1 {
+        font-size: 1.3em;
+    }
+
+    .game-stats {
+        gap: 8px;
+        padding: 6px;
+    }
+
+    .stat-label,
+    .stat-value {
+        font-size: 0.8em;
+    }
+
+    .control-btn {
+        padding: 8px 10px;
+        font-size: 0.85em;
+    }
+
+    .tower-btn {
+        padding: 12px;
+        min-height: 65px;
+    }
+
+    .tower-name {
+        font-size: 1em;
+    }
+
+    .tower-cost {
+        font-size: 0.95em;
+    }
+
+    .tower-stats {
+        font-size: 0.8em;
+    }
+
+    .modal-content h2 {
+        font-size: 1.5em;
+    }
+
+    .countdown-timer {
+        font-size: 2em;
+    }
+}

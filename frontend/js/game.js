@@ -1,9 +1,43 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// Original canvas dimensions
+const CANVAS_WIDTH = 800;
+const CANVAS_HEIGHT = 600;
+let canvasScale = 1;
+
 const GRID_SIZE = 40;
-const COLS = canvas.width / GRID_SIZE;
-const ROWS = canvas.height / GRID_SIZE;
+const COLS = CANVAS_WIDTH / GRID_SIZE;
+const ROWS = CANVAS_HEIGHT / GRID_SIZE;
+
+// Responsive canvas sizing
+function resizeCanvas() {
+    const container = canvas.parentElement;
+    const containerWidth = container.clientWidth;
+    const maxWidth = Math.min(containerWidth, CANVAS_WIDTH);
+
+    if (window.innerWidth <= 1024) {
+        canvas.style.width = maxWidth + 'px';
+        canvas.style.height = (maxWidth * CANVAS_HEIGHT / CANVAS_WIDTH) + 'px';
+        canvasScale = maxWidth / CANVAS_WIDTH;
+    } else {
+        canvas.style.width = CANVAS_WIDTH + 'px';
+        canvas.style.height = CANVAS_HEIGHT + 'px';
+        canvasScale = 1;
+    }
+}
+
+// Helper function to get canvas coordinates from mouse/touch event
+function getCanvasCoordinates(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const x = (clientX - rect.left) / canvasScale;
+    const y = (clientY - rect.top) / canvasScale;
+    return { x, y };
+}
+
+// Initialize canvas size
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
 
 const gamePath = [
     { x: 0, y: 200 },
@@ -18,22 +52,22 @@ const gamePath = [
 
 const difficultySettings = {
     easy: {
-        health: 150,
-        money: 750,
-        enemyHealthMultiplier: 0.7,
-        rewardMultiplier: 1.3
+        health: 50,  // Reduced from 150
+        money: 300,  // Reduced from 750 - forces strategic choices
+        enemyHealthMultiplier: 0.8,  // Slightly harder
+        rewardMultiplier: 1.2  // Reduced from 1.3
     },
     normal: {
-        health: 100,
-        money: 500,
+        health: 30,  // Reduced from 100 - much harder!
+        money: 200,  // Reduced from 500 - very limited starting resources
         enemyHealthMultiplier: 1.0,
-        rewardMultiplier: 1.0
+        rewardMultiplier: 0.9  // Less reward
     },
     hard: {
-        health: 75,
-        money: 350,
-        enemyHealthMultiplier: 1.4,
-        rewardMultiplier: 0.8
+        health: 20,  // Reduced from 75 - brutal!
+        money: 150,  // Reduced from 350 - extreme resource management required
+        enemyHealthMultiplier: 1.3,  // Harder enemies
+        rewardMultiplier: 0.7  // Much less reward
     }
 };
 
@@ -55,6 +89,7 @@ const gameState = {
     spawnTimer: 0,
     gameSpeed: 1,
     explosions: [],
+    damageNumbers: [],
     difficulty: 'normal',
     waveCountdown: 0,
     waveCountdownActive: false,
@@ -160,9 +195,11 @@ function spawnWave() {
     let tankCount = Math.floor(wave / 4);
     let healerCount = wave >= 3 ? Math.floor(wave / 5) : 0;
     let flyingCount = wave >= 5 ? Math.floor(wave / 6) : 0;
+    let armoredCount = wave >= 4 ? Math.floor(wave / 5) : 0;
+    let shieldedCount = wave >= 6 ? Math.floor(wave / 7) : 0;
     let bossCount = wave % 10 === 0 ? 1 : 0;
 
-    gameState.enemiesToSpawn = basicCount + fastCount + tankCount + healerCount + flyingCount + bossCount;
+    gameState.enemiesToSpawn = basicCount + fastCount + tankCount + healerCount + flyingCount + armoredCount + shieldedCount + bossCount;
     gameState.spawnQueue = [];
 
     for (let i = 0; i < basicCount; i++) {
@@ -179,6 +216,12 @@ function spawnWave() {
     }
     for (let i = 0; i < flyingCount; i++) {
         gameState.spawnQueue.push('flying');
+    }
+    for (let i = 0; i < armoredCount; i++) {
+        gameState.spawnQueue.push('armored');
+    }
+    for (let i = 0; i < shieldedCount; i++) {
+        gameState.spawnQueue.push('shielded');
     }
     for (let i = 0; i < bossCount; i++) {
         gameState.spawnQueue.push('boss');
@@ -234,6 +277,16 @@ function updateGameLogic() {
         }
     }
 
+    for (let i = gameState.damageNumbers.length - 1; i >= 0; i--) {
+        const dmgNum = gameState.damageNumbers[i];
+        dmgNum.life--;
+        dmgNum.y -= 1;  // Float upward
+        dmgNum.opacity = dmgNum.life / 30;  // Fade out
+        if (dmgNum.life <= 0) {
+            gameState.damageNumbers.splice(i, 1);
+        }
+    }
+
     if (gameState.waveInProgress && gameState.spawnQueue.length > 0) {
         gameState.spawnTimer++;
         if (gameState.spawnTimer >= 40) {
@@ -274,7 +327,25 @@ function updateGameLogic() {
 
         if (result.hit) {
             if (projectile.target) {
-                const killed = projectile.target.takeDamage(projectile.damage);
+                const actualDamage = projectile.damage * (projectile.target.resistances[projectile.damageType] || 1);
+                const killed = projectile.target.takeDamage(projectile.damage, projectile.damageType);
+
+                // Track tower stats
+                if (projectile.tower) {
+                    projectile.tower.totalDamageDealt += actualDamage;
+                    if (killed) {
+                        projectile.tower.kills++;
+                    }
+                }
+
+                // Add damage number
+                gameState.damageNumbers.push({
+                    x: result.x,
+                    y: result.y,
+                    damage: Math.floor(actualDamage),
+                    life: 30,
+                    opacity: 1
+                });
 
                 gameState.explosions.push({
                     x: result.x,
@@ -293,7 +364,17 @@ function updateGameLogic() {
                             const distance = Math.sqrt(dx * dx + dy * dy);
 
                             if (distance <= projectile.splashRadius) {
-                                enemy.takeDamage(projectile.damage * 0.5);
+                                const splashDamage = projectile.damage * 0.5;
+                                const splashActualDamage = splashDamage * (enemy.resistances[projectile.damageType] || 1);
+                                const splashKilled = enemy.takeDamage(splashDamage, projectile.damageType);
+
+                                // Track splash damage stats
+                                if (projectile.tower) {
+                                    projectile.tower.totalDamageDealt += splashActualDamage;
+                                    if (splashKilled) {
+                                        projectile.tower.kills++;
+                                    }
+                                }
                             }
                         }
                     }
@@ -338,6 +419,19 @@ function render() {
         ctx.beginPath();
         ctx.arc(explosion.x, explosion.y, explosion.radius, 0, Math.PI * 2);
         ctx.fill();
+    }
+
+    for (const dmgNum of gameState.damageNumbers) {
+        ctx.save();
+        ctx.globalAlpha = dmgNum.opacity;
+        ctx.fillStyle = '#ffff00';
+        ctx.strokeStyle = '#000000';
+        ctx.font = 'bold 14px Arial';
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 3;
+        ctx.strokeText(dmgNum.damage.toString(), dmgNum.x, dmgNum.y);
+        ctx.fillText(dmgNum.damage.toString(), dmgNum.x, dmgNum.y);
+        ctx.restore();
     }
 
     for (const enemy of gameState.enemies) {
@@ -466,9 +560,7 @@ towerButtons.forEach(btn => {
 });
 
 canvas.addEventListener('mousemove', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const { x, y } = getCanvasCoordinates(e.clientX, e.clientY);
 
     const gridX = Math.floor(x / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
     const gridY = Math.floor(y / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
@@ -476,10 +568,9 @@ canvas.addEventListener('mousemove', (e) => {
     gameState.previewPosition = { x: gridX, y: gridY };
 });
 
-canvas.addEventListener('click', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+// Shared function for handling canvas clicks/touches
+function handleCanvasInteraction(clientX, clientY) {
+    const { x, y } = getCanvasCoordinates(clientX, clientY);
 
     const gridX = Math.floor(x / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
     const gridY = Math.floor(y / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
@@ -517,17 +608,53 @@ canvas.addEventListener('click', (e) => {
             document.getElementById('towerInfo').style.display = 'none';
         }
     }
+}
+
+canvas.addEventListener('click', (e) => {
+    handleCanvasInteraction(e.clientX, e.clientY);
 });
+
+// Touch event handlers
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        handleCanvasInteraction(touch.clientX, touch.clientY);
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        const { x, y } = getCanvasCoordinates(touch.clientX, touch.clientY);
+
+        const gridX = Math.floor(x / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
+        const gridY = Math.floor(y / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
+
+        gameState.previewPosition = { x: gridX, y: gridY };
+    }
+}, { passive: false });
 
 function showTowerInfo(tower) {
     const towerInfo = document.getElementById('towerInfo');
     const upgradeCost = tower.getUpgradeCost();
 
+    // Calculate DPS (damage per second)
+    const dps = tower.fireRate > 0 ? (tower.damage * 60) / tower.fireRate : 0;
+
     document.getElementById('towerInfoTitle').textContent = `${tower.type.charAt(0).toUpperCase() + tower.type.slice(1)} Tower (Lvl ${tower.level})`;
     document.getElementById('towerInfoStats').innerHTML = `
+        <strong>Stats:</strong><br>
         Damage: ${Math.floor(tower.damage)}<br>
         Range: ${Math.floor(tower.range)}<br>
-        Fire Rate: ${tower.fireRate}${tower.special ? '<br>Special: ' + tower.special : ''}
+        DPS: ${dps.toFixed(1)}<br>
+        ${tower.special ? 'Special: ' + tower.special + '<br>' : ''}
+        <br>
+        <strong>Performance:</strong><br>
+        Kills: ${tower.kills}<br>
+        Total Damage: ${Math.floor(tower.totalDamageDealt)}<br>
+        Shots Fired: ${tower.shotsFired}
     `;
 
     const upgradeBtn = document.getElementById('upgradeTowerBtn');
@@ -616,6 +743,8 @@ function updateWavePreview() {
     let tankCount = Math.floor(nextWave / 4);
     let healerCount = nextWave >= 3 ? Math.floor(nextWave / 5) : 0;
     let flyingCount = nextWave >= 5 ? Math.floor(nextWave / 6) : 0;
+    let armoredCount = nextWave >= 4 ? Math.floor(nextWave / 5) : 0;
+    let shieldedCount = nextWave >= 6 ? Math.floor(nextWave / 7) : 0;
     let bossCount = nextWave % 10 === 0 ? 1 : 0;
 
     let preview = '';
@@ -623,7 +752,9 @@ function updateWavePreview() {
     if (fastCount > 0) preview += `<div class="enemy-preview"><span style="color:#44ff44">● Fast</span><span>${fastCount}</span></div>`;
     if (tankCount > 0) preview += `<div class="enemy-preview"><span style="color:#4444ff">● Tank</span><span>${tankCount}</span></div>`;
     if (healerCount > 0) preview += `<div class="enemy-preview"><span style="color:#00ffff">● Healer</span><span>${healerCount}</span></div>`;
-    if (flyingCount > 0) preview += `<div class="enemy-preview"><span style="color:#ffaa00">● Flying</span><span>${flyingCount}</span></div>`;
+    if (flyingCount > 0) preview += `<div class="enemy-preview"><span style="color:#ffaa00">● Flying</span><span>${flyingCount}</span><div style="font-size:10px;color:#888;margin-top:2px">Immune: ground towers</div></div>`;
+    if (armoredCount > 0) preview += `<div class="enemy-preview"><span style="color:#888888">● Armored</span><span>${armoredCount}</span><div style="font-size:10px;color:#888;margin-top:2px">Weak: pierce/splash</div></div>`;
+    if (shieldedCount > 0) preview += `<div class="enemy-preview"><span style="color:#aaaaff">● Shielded</span><span>${shieldedCount}</span><div style="font-size:10px;color:#888;margin-top:2px">Weak: poison</div></div>`;
     if (bossCount > 0) preview += `<div class="enemy-preview"><span style="color:#ff00ff">◆ BOSS</span><span>${bossCount}</span></div>`;
 
     document.getElementById('wavePreviewContent').innerHTML = preview;

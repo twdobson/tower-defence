@@ -24,7 +24,7 @@ class Projectile {
         if (distance < this.speed) {
             this.alive = false;
             this.applyEffects(this.target, enemies);
-            return { hit: true, x: this.target.x, y: this.target.y, special: this.special };
+            return { hit: true, x: this.target.x, y: this.target.y, special: this.special, damageType: this.damageType };
         }
 
         this.x += (dx / distance) * this.speed;
@@ -65,7 +65,7 @@ class Projectile {
 
                 if (nextTarget) {
                     chainTargets.push(nextTarget);
-                    nextTarget.takeDamage(this.damage * 0.5);
+                    nextTarget.takeDamage(this.damage * 0.5, this.damageType);
                     currentTarget = nextTarget;
                 } else {
                     break;
