@@ -74,6 +74,11 @@ if gcloud iam service-accounts describe $SERVICE_ACCOUNT_EMAIL &>/dev/null; then
 
     gcloud projects remove-iam-policy-binding $PROJECT_ID \
         --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" \
+        --role="roles/artifactregistry.writer" \
+        --quiet >/dev/null 2>&1 || true
+
+    gcloud projects remove-iam-policy-binding $PROJECT_ID \
+        --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" \
         --role="roles/iam.serviceAccountUser" \
         --quiet >/dev/null 2>&1 || true
 

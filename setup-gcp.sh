@@ -43,6 +43,7 @@ echo "🔧 Enabling required APIs (this may take a minute)..."
 gcloud services enable run.googleapis.com \
     containerregistry.googleapis.com \
     cloudbuild.googleapis.com \
+    artifactregistry.googleapis.com \
     --quiet
 
 echo "✅ APIs enabled"
@@ -73,6 +74,12 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" \
     --role="roles/storage.admin" \
+    --condition=None \
+    --quiet >/dev/null 2>&1
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" \
+    --role="roles/artifactregistry.writer" \
     --condition=None \
     --quiet >/dev/null 2>&1
 
