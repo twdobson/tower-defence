@@ -9,6 +9,7 @@ class Projectile {
         this.alive = true;
         this.splashRadius = splashRadius;
         this.special = null;
+        this.trailCounter = 0;
     }
 
     update(enemies) {
@@ -29,6 +30,31 @@ class Projectile {
 
         this.x += (dx / distance) * this.speed;
         this.y += (dy / distance) * this.speed;
+
+        // Create trail particles (not for laser beams)
+        this.trailCounter++;
+        if (this.special !== 'laser' && this.trailCounter % 2 === 0 && window.gameState) {
+            let trailType = 'spark';
+            let trailCount = 1;
+
+            if (this.special === 'poison') {
+                trailType = 'magic';
+                trailCount = 1;
+            } else if (this.special === 'electric') {
+                trailType = 'energy';
+                trailCount = 2;
+            } else if (this.special === 'freeze') {
+                trailType = 'energy';
+                trailCount = 1;
+            } else if (this.splashRadius > 0) {
+                trailType = 'smoke';
+                trailCount = 1;
+            }
+
+            if (window.createParticleBurst) {
+                window.createParticleBurst(this.x, this.y, trailCount, trailType);
+            }
+        }
 
         return { hit: false };
     }

@@ -119,6 +119,8 @@ class Tower {
         this.shotsFired = 0;
         this.sellValue = Math.floor(this.cost * 0.7);
         this.upgradePath = null;  // Will be set when tower reaches level 3
+        this.angle = 0;  // Current rotation angle
+        this.targetAngle = 0;  // Angle to face target
     }
 
     getUpgradePaths() {
@@ -330,6 +332,22 @@ class Tower {
             this.target = this.findTarget(enemies);
         }
 
+        // Update rotation to face target
+        if (this.target) {
+            const dx = this.target.x - this.x;
+            const dy = this.target.y - this.y;
+            this.targetAngle = Math.atan2(dy, dx);
+
+            // Smooth rotation interpolation
+            let angleDiff = this.targetAngle - this.angle;
+            // Normalize angle difference to [-PI, PI]
+            while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+            while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+            // Rotate smoothly towards target (10% per frame)
+            this.angle += angleDiff * 0.15;
+        }
+
         if (this.target && this.shootCooldown === 0) {
             this.shootCooldown = this.fireRate;
             return this.shoot();
@@ -370,6 +388,24 @@ class Tower {
 
         this.shotsFired++;
 
+        // Calculate barrel tip position for muzzle flash
+        const barrelLength = 20;
+        const barrelX = this.x + Math.cos(this.angle) * barrelLength;
+        const barrelY = this.y + Math.sin(this.angle) * barrelLength;
+
+        // Create muzzle flash particles
+        if (window.createParticleBurst) {
+            if (this.special === 'laser') {
+                window.createParticleBurst(barrelX, barrelY, 3, 'energy');
+            } else if (this.special === 'electric') {
+                window.createParticleBurst(barrelX, barrelY, 4, 'energy');
+            } else if (this.special === 'poison') {
+                window.createParticleBurst(barrelX, barrelY, 3, 'magic');
+            } else {
+                window.createParticleBurst(barrelX, barrelY, 3, 'spark');
+            }
+        }
+
         const projectile = new Projectile(
             this.x,
             this.y,
@@ -396,12 +432,35 @@ class Tower {
     }
 
     draw(ctx, isSelected = false) {
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.x - 15, this.y - 15, 30, 30);
+        // Draw base (non-rotating part)
+        ctx.fillStyle = '#444444';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1;
+        ctx.stroke();
 
+        // Draw rotating tower body
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+
+        // Tower body (rotates)
+        ctx.fillStyle = this.color;
+        ctx.fillRect(-12, -10, 24, 20);
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 2;
-        ctx.strokeRect(this.x - 15, this.y - 15, 30, 30);
+        ctx.strokeRect(-12, -10, 24, 20);
+
+        // Tower barrel (points forward)
+        ctx.fillStyle = '#666666';
+        ctx.fillRect(8, -5, 12, 10);
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(8, -5, 12, 10);
+
+        ctx.restore();
 
         if (isSelected) {
             ctx.strokeStyle = '#ffff00';

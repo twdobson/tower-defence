@@ -114,6 +114,12 @@ body {
 .ability-btn:hover:not(:disabled) {
     background: rgba(255, 165, 0, 0.4);
     transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(255, 165, 0, 0.3);
+}
+
+.ability-btn:active:not(:disabled) {
+    transform: translateY(0px);
+    box-shadow: 0 2px 4px rgba(255, 165, 0, 0.2);
 }
 
 .ability-btn:disabled {
@@ -209,11 +215,18 @@ body {
 .tower-btn:hover {
     background: rgba(255, 255, 255, 0.3);
     transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.tower-btn:active {
+    transform: translateY(0px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .tower-btn.selected {
     background: rgba(255, 215, 0, 0.3);
     border-color: #ffd700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
 }
 
 .tower-btn.disabled {
@@ -258,6 +271,12 @@ body {
 
 .start-wave-btn:hover {
     background: #218838;
+    transform: scale(1.02);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.start-wave-btn:active {
+    transform: scale(0.98);
 }
 
 .start-wave-btn:disabled {
@@ -272,6 +291,12 @@ body {
 
 .sell-tower-btn:hover {
     background: #c82333;
+    transform: scale(1.02);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.sell-tower-btn:active {
+    transform: scale(0.98);
 }
 
 .control-btn {
@@ -288,6 +313,11 @@ body {
 
 .control-btn:hover {
     background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+}
+
+.control-btn:active {
+    transform: scale(0.98);
 }
 
 .game-controls {
@@ -330,6 +360,12 @@ body {
 
 .upgrade-tower-btn:hover {
     background: #138496;
+    transform: scale(1.02);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.upgrade-tower-btn:active:not(:disabled) {
+    transform: scale(0.98);
 }
 
 .upgrade-tower-btn:disabled {

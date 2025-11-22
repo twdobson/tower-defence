@@ -124,8 +124,118 @@ const gameState = {
             active: false,
             timer: 0
         }
-    }
+    },
+    particles: []
 };
+
+// Particle class for enhanced visual effects
+class Particle {
+    constructor(x, y, type = 'spark') {
+        this.x = x;
+        this.y = y;
+        this.type = type;
+        this.life = 60;
+        this.maxLife = 60;
+        this.alpha = 1;
+
+        switch(type) {
+            case 'spark':
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() - 0.5) * 4;
+                this.size = Math.random() * 3 + 1;
+                this.color = ['#ffff00', '#ff8800', '#ff0000'][Math.floor(Math.random() * 3)];
+                this.gravity = 0.1;
+                break;
+            case 'smoke':
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = -Math.random() * 1.5 - 0.5;
+                this.size = Math.random() * 8 + 4;
+                this.color = '#888888';
+                this.gravity = -0.02;
+                this.life = 40;
+                this.maxLife = 40;
+                break;
+            case 'energy':
+                this.vx = (Math.random() - 0.5) * 3;
+                this.vy = (Math.random() - 0.5) * 3;
+                this.size = Math.random() * 4 + 2;
+                this.color = '#00ffff';
+                this.gravity = 0;
+                break;
+            case 'blood':
+                this.vx = (Math.random() - 0.5) * 3;
+                this.vy = (Math.random() - 0.5) * 3 - 1;
+                this.size = Math.random() * 3 + 1;
+                this.color = '#ff0000';
+                this.gravity = 0.15;
+                break;
+            case 'magic':
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.size = Math.random() * 3 + 2;
+                this.color = ['#ff00ff', '#00ffff', '#ffff00'][Math.floor(Math.random() * 3)];
+                this.gravity = -0.05;
+                this.spin = Math.random() * 0.2;
+                this.angle = 0;
+                break;
+        }
+    }
+
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += this.gravity;
+        this.life--;
+        this.alpha = this.life / this.maxLife;
+
+        if (this.type === 'smoke') {
+            this.size += 0.2;
+            this.vx *= 0.98;
+            this.vy *= 0.98;
+        } else if (this.type === 'magic') {
+            this.angle += this.spin;
+        } else {
+            this.vx *= 0.98;
+        }
+
+        return this.life > 0;
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = this.alpha;
+
+        if (this.type === 'smoke') {
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (this.type === 'magic') {
+            ctx.translate(this.x, this.y);
+            ctx.rotate(this.angle);
+            ctx.fillStyle = this.color;
+            ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+        } else {
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.restore();
+    }
+}
+
+// Helper function to create particle bursts
+function createParticleBurst(x, y, count, type) {
+    for (let i = 0; i < count; i++) {
+        gameState.particles.push(new Particle(x, y, type));
+    }
+}
+
+// Make createParticleBurst available globally for projectiles
+window.createParticleBurst = createParticleBurst;
+window.gameState = gameState;
 
 function updateUI() {
     document.getElementById('health').textContent = gameState.health;
@@ -331,6 +441,13 @@ function updateGame() {
 }
 
 function updateGameLogic() {
+    // Update particles
+    for (let i = gameState.particles.length - 1; i >= 0; i--) {
+        if (!gameState.particles[i].update()) {
+            gameState.particles.splice(i, 1);
+        }
+    }
+
     // Update ability cooldowns
     for (const abilityKey in gameState.abilities) {
         const ability = gameState.abilities[abilityKey];
@@ -415,6 +532,20 @@ function updateGameLogic() {
             gameState.money += Math.floor(enemy.reward * rewardMod);
             gameState.score += Math.floor(enemy.reward * gameState.wave * rewardMod);
 
+            // Create death particles based on enemy type
+            if (enemy.flying) {
+                createParticleBurst(enemy.x, enemy.y, 10, 'energy');
+            } else if (enemy.type === 'boss') {
+                createParticleBurst(enemy.x, enemy.y, 30, 'spark');
+                createParticleBurst(enemy.x, enemy.y, 15, 'smoke');
+            } else if (enemy.type === 'splitter') {
+                createParticleBurst(enemy.x, enemy.y, 15, 'magic');
+            } else if (enemy.type === 'spawner') {
+                createParticleBurst(enemy.x, enemy.y, 12, 'magic');
+            } else {
+                createParticleBurst(enemy.x, enemy.y, 8, 'blood');
+            }
+
             // Handle splitter enemy splitting
             if (enemy.shouldSplit) {
                 const difficultyMod = difficultySettings[gameState.difficulty].enemyHealthMultiplier;
@@ -473,6 +604,20 @@ function updateGameLogic() {
                     opacity: 1,
                     color: projectile.color
                 });
+
+                // Create hit particles based on projectile type
+                if (projectile.splashRadius > 0) {
+                    createParticleBurst(result.x, result.y, 12, 'spark');
+                    createParticleBurst(result.x, result.y, 6, 'smoke');
+                } else if (projectile.special === 'poison') {
+                    createParticleBurst(result.x, result.y, 8, 'magic');
+                } else if (projectile.special === 'electric') {
+                    createParticleBurst(result.x, result.y, 10, 'energy');
+                } else if (projectile.special === 'freeze') {
+                    createParticleBurst(result.x, result.y, 8, 'energy');
+                } else {
+                    createParticleBurst(result.x, result.y, 5, 'spark');
+                }
 
                 if (projectile.splashRadius > 0) {
                     for (const enemy of gameState.enemies) {
@@ -537,6 +682,11 @@ function render() {
         ctx.beginPath();
         ctx.arc(explosion.x, explosion.y, explosion.radius, 0, Math.PI * 2);
         ctx.fill();
+    }
+
+    // Draw particles
+    for (const particle of gameState.particles) {
+        particle.draw(ctx);
     }
 
     for (const dmgNum of gameState.damageNumbers) {
@@ -939,6 +1089,11 @@ function activateAirStrike(x, y) {
         opacity: 1,
         color: '#ff4500'
     });
+
+    // Create dramatic explosion particles
+    createParticleBurst(x, y, 30, 'spark');
+    createParticleBurst(x, y, 15, 'smoke');
+    createParticleBurst(x, y, 10, 'energy');
 
     updateUI();
     return true;
