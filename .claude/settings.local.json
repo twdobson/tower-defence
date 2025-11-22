@@ -10,7 +10,11 @@
       "Bash(chmod:*)",
       "Bash(gh run list:*)",
       "Bash(gh run view:*)",
-      "Bash(gcloud projects get-iam-policy:*)"
+      "Bash(gcloud projects get-iam-policy:*)",
+      "Bash(git push:*)",
+      "Bash(gh run watch:*)",
+      "Bash(gcloud artifacts repositories create:*)",
+      "Bash(gcloud run services describe:*)"
     ],
     "deny": [],
     "ask": []

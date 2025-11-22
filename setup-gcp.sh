@@ -91,6 +91,21 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
 echo "✅ IAM permissions granted"
 
+# Create Artifact Registry repository for GCR
+echo ""
+echo "📦 Setting up Artifact Registry for GCR..."
+if gcloud artifacts repositories describe gcr.io --location=us &>/dev/null; then
+    echo "✅ Artifact Registry repository already exists"
+else
+    echo "📝 Creating Artifact Registry repository..."
+    gcloud artifacts repositories create gcr.io \
+        --repository-format=docker \
+        --location=us \
+        --description="Container Registry for Tower Defense" \
+        --quiet
+    echo "✅ Artifact Registry repository created"
+fi
+
 # Create and download service account key
 echo ""
 echo "🔑 Creating service account key..."

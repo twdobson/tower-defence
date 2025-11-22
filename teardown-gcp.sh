@@ -42,20 +42,16 @@ else
     echo "ℹ️  Cloud Run service not found"
 fi
 
-# List and delete container images
+# Delete Artifact Registry repository
 echo ""
-echo "🗑️  Deleting container images..."
-IMAGES=$(gcloud container images list --repository=gcr.io/$PROJECT_ID --format="get(name)" 2>/dev/null || echo "")
-if [ -n "$IMAGES" ]; then
-    for IMAGE in $IMAGES; do
-        if [[ $IMAGE == *"$SERVICE_NAME"* ]]; then
-            echo "  Deleting $IMAGE..."
-            gcloud container images delete "$IMAGE" --quiet 2>/dev/null || true
-        fi
-    done
-    echo "✅ Container images deleted"
+echo "🗑️  Deleting Artifact Registry repository..."
+if gcloud artifacts repositories describe gcr.io --location=us &>/dev/null; then
+    gcloud artifacts repositories delete gcr.io \
+        --location=us \
+        --quiet 2>/dev/null || true
+    echo "✅ Artifact Registry repository deleted"
 else
-    echo "ℹ️  No container images found"
+    echo "ℹ️  Artifact Registry repository not found"
 fi
 
 # Remove IAM policy bindings
