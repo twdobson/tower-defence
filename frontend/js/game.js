@@ -864,47 +864,89 @@ function handleCanvasInteraction(clientX, clientY) {
     const gridX = Math.floor(x / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
     const gridY = Math.floor(y / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
 
-    if (gameState.selectedTowerType) {
-        const tower = new Tower(0, 0, gameState.selectedTowerType);
+    // Check if clicked on existing tower
+    let clickedTower = null;
+    for (const tower of gameState.towers) {
+        const dx = tower.x - x;
+        const dy = tower.y - y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
 
-        if (gameState.money >= tower.cost && !isOnPath(gridX, gridY) && !isTooCloseToTower(gridX, gridY)) {
-            const newTower = new Tower(gridX, gridY, gameState.selectedTowerType);
-
-            // Apply tower boost if active
-            const towerboost = gameState.abilities.towerboost;
-            if (towerboost.active) {
-                newTower.originalDamage = newTower.damage;
-                newTower.damage *= towerboost.boostAmount;
-                newTower.boosted = true;
-            }
-
-            gameState.towers.push(newTower);
-            gameState.money -= newTower.cost;
-            updateUI();
-
-            gameState.selectedTowerType = null;
-            towerButtons.forEach(b => b.classList.remove('selected'));
+        if (distance < 20) {
+            clickedTower = tower;
+            break;
         }
-    } else {
-        let clickedTower = null;
-        for (const tower of gameState.towers) {
-            const dx = tower.x - x;
-            const dy = tower.y - y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
+    }
 
-            if (distance < 20) {
-                clickedTower = tower;
-                break;
-            }
-        }
-
+    if (clickedTower) {
+        // Clicked on existing tower - show tower info
         gameState.selectedTower = clickedTower;
+        showTowerInfo(clickedTower);
+        closeTowerSelectionPopup();
+    } else {
+        // Clicked on empty space
+        document.getElementById('towerInfo').style.display = 'none';
+        gameState.selectedTower = null;
 
-        if (clickedTower) {
-            showTowerInfo(clickedTower);
-        } else {
-            document.getElementById('towerInfo').style.display = 'none';
+        // Check if location is valid for tower placement
+        if (!isOnPath(gridX, gridY) && !isTooCloseToTower(gridX, gridY)) {
+            // Show tower selection popup
+            showTowerSelectionPopup(gridX, gridY);
         }
+    }
+}
+
+// Tower selection popup state
+let pendingTowerPlacement = null;
+
+function showTowerSelectionPopup(gridX, gridY) {
+    pendingTowerPlacement = { x: gridX, y: gridY };
+    const popup = document.getElementById('towerSelectionPopup');
+
+    // Update button states based on available money
+    const buttons = popup.querySelectorAll('.popup-tower-btn');
+    buttons.forEach(btn => {
+        const towerType = btn.dataset.type;
+        const tempTower = new Tower(0, 0, towerType);
+
+        if (gameState.money < tempTower.cost) {
+            btn.classList.add('insufficient-funds');
+            btn.disabled = true;
+        } else {
+            btn.classList.remove('insufficient-funds');
+            btn.disabled = false;
+        }
+    });
+
+    popup.style.display = 'block';
+}
+
+function closeTowerSelectionPopup() {
+    document.getElementById('towerSelectionPopup').style.display = 'none';
+    pendingTowerPlacement = null;
+}
+
+function placeTowerFromPopup(towerType) {
+    if (!pendingTowerPlacement) return;
+
+    const { x, y } = pendingTowerPlacement;
+    const tower = new Tower(0, 0, towerType);
+
+    if (gameState.money >= tower.cost) {
+        const newTower = new Tower(x, y, towerType);
+
+        // Apply tower boost if active
+        const towerboost = gameState.abilities.towerboost;
+        if (towerboost.active) {
+            newTower.originalDamage = newTower.damage;
+            newTower.damage *= towerboost.boostAmount;
+            newTower.boosted = true;
+        }
+
+        gameState.towers.push(newTower);
+        gameState.money -= newTower.cost;
+        updateUI();
+
+        closeTowerSelectionPopup();
     }
 }
 
@@ -1380,6 +1422,7 @@ document.addEventListener('keydown', (e) => {
         gameState.selectedTower = null;
         towerButtons.forEach(b => b.classList.remove('selected'));
         document.getElementById('towerInfo').style.display = 'none';
+        closeTowerSelectionPopup();
     } else if (key === 'enter') {
         if (gameState.waveCountdownActive) {
             gameState.waveCountdown = 0;
@@ -1419,6 +1462,25 @@ async function getPlayerRank() {
         return '?';
     }
 }
+
+// Tower selection popup event listeners
+document.querySelectorAll('.popup-tower-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const towerType = btn.dataset.type;
+        placeTowerFromPopup(towerType);
+    });
+});
+
+document.querySelector('.popup-close').addEventListener('click', () => {
+    closeTowerSelectionPopup();
+});
+
+// Close popup when clicking outside of it
+document.getElementById('towerSelectionPopup').addEventListener('click', (e) => {
+    if (e.target.id === 'towerSelectionPopup') {
+        closeTowerSelectionPopup();
+    }
+});
 
 console.log('Game script loaded');
 console.log('Difficulty modal element:', document.getElementById('difficultyModal'));

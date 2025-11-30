@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tower Defense Game</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -200,6 +200,61 @@
                 <button id="confirmUpgradePath" class="confirm-btn" disabled>Confirm Choice</button>
                 <button id="cancelUpgradePath" class="cancel-btn">Cancel</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Tower Selection Popup -->
+    <div id="towerSelectionPopup" class="tower-selection-popup" style="display: none;">
+        <div class="popup-header">
+            <h3>Select Tower</h3>
+            <button class="popup-close">&times;</button>
+        </div>
+        <div class="popup-towers">
+            <button class="popup-tower-btn" data-type="basic">
+                <div class="tower-name">Basic</div>
+                <div class="tower-cost">$50</div>
+                <div class="tower-stats">Dmg: 12 | Range: 110</div>
+            </button>
+            <button class="popup-tower-btn" data-type="rapid">
+                <div class="tower-name">Rapid</div>
+                <div class="tower-cost">$100</div>
+                <div class="tower-stats">Dmg: 6 | Fast fire</div>
+            </button>
+            <button class="popup-tower-btn" data-type="sniper">
+                <div class="tower-name">Sniper</div>
+                <div class="tower-cost">$120</div>
+                <div class="tower-stats">Dmg: 40 | Range: 220</div>
+            </button>
+            <button class="popup-tower-btn" data-type="poison">
+                <div class="tower-name">Poison</div>
+                <div class="tower-cost">$140</div>
+                <div class="tower-stats">DoT poison damage</div>
+            </button>
+            <button class="popup-tower-btn" data-type="splash">
+                <div class="tower-name">Splash</div>
+                <div class="tower-cost">$150</div>
+                <div class="tower-stats">AoE damage</div>
+            </button>
+            <button class="popup-tower-btn" data-type="antiair">
+                <div class="tower-name">Anti-Air</div>
+                <div class="tower-cost">$160</div>
+                <div class="tower-stats">Targets flying only</div>
+            </button>
+            <button class="popup-tower-btn" data-type="freeze">
+                <div class="tower-name">Freeze</div>
+                <div class="tower-cost">$180</div>
+                <div class="tower-stats">Slows enemies</div>
+            </button>
+            <button class="popup-tower-btn" data-type="electric">
+                <div class="tower-name">Electric</div>
+                <div class="tower-cost">$200</div>
+                <div class="tower-stats">Chain lightning</div>
+            </button>
+            <button class="popup-tower-btn" data-type="laser">
+                <div class="tower-name">Laser</div>
+                <div class="tower-cost">$250</div>
+                <div class="tower-stats">Dmg: 25 | Pierce</div>
+            </button>
         </div>
     </div>
 

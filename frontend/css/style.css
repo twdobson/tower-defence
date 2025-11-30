@@ -613,10 +613,163 @@ body {
     background: #218838;
 }
 
+/* Tower Selection Popup */
+.tower-selection-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(20, 20, 40, 0.98);
+    border: 3px solid #ffd700;
+    border-radius: 15px;
+    padding: 20px;
+    z-index: 10000;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    animation: popupSlideIn 0.2s ease-out;
+}
+
+@keyframes popupSlideIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -40%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+.popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+}
+
+.popup-header h3 {
+    margin: 0;
+    color: #ffd700;
+    font-size: 1.5em;
+}
+
+.popup-close {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 2em;
+    cursor: pointer;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.popup-close:hover {
+    background: rgba(255, 0, 0, 0.3);
+    transform: rotate(90deg);
+}
+
+.popup-towers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+.popup-tower-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid #fff;
+    border-radius: 10px;
+    padding: 15px 10px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.popup-tower-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.popup-tower-btn:active {
+    transform: translateY(-1px);
+}
+
+.popup-tower-btn.insufficient-funds {
+    opacity: 0.4;
+    cursor: not-allowed;
+    border-color: #666;
+}
+
+.popup-tower-btn.insufficient-funds:hover {
+    transform: none;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.popup-tower-btn .tower-name {
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-bottom: 8px;
+}
+
+.popup-tower-btn .tower-cost {
+    color: #ffd700;
+    font-size: 1em;
+    margin-bottom: 6px;
+    font-weight: bold;
+}
+
+.popup-tower-btn .tower-stats {
+    font-size: 0.85em;
+    opacity: 0.9;
+    color: #ccc;
+}
+
 /* Mobile Responsive Styles */
 @media (max-width: 1024px) {
     body {
         padding: 10px;
+    }
+
+    .tower-selection-popup {
+        padding: 15px;
+        max-width: 95vw;
+        max-height: 85vh;
+    }
+
+    .popup-header h3 {
+        font-size: 1.2em;
+    }
+
+    .popup-towers {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .popup-tower-btn {
+        padding: 12px 8px;
+    }
+
+    .popup-tower-btn .tower-name {
+        font-size: 1em;
+    }
+
+    .popup-tower-btn .tower-cost {
+        font-size: 0.95em;
+    }
+
+    .popup-tower-btn .tower-stats {
+        font-size: 0.75em;
     }
 
     .game-header h1 {
